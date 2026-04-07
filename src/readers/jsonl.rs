@@ -1,62 +1,20 @@
 use crate::analyzers::cost::approximate_cost;
+use crate::readers::discovery::discover_jsonl_files;
+use crate::readers::wire::JsonlRecord;
 use crate::{
     round_ratio, timestamp_date_key, timestamp_year, AssistantEntry, DailyAggregate,
     ModelAggregate, ProjectSummary,
 };
-use glob::glob;
-use serde::Deserialize;
 use serde_json::Value;
 use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 use std::fs;
-use std::path::{Path, PathBuf};
-
-#[derive(Debug, Deserialize, Default)]
-#[serde(rename_all = "camelCase")]
-struct JsonlRecord {
-    #[serde(rename = "type")]
-    record_type: Option<String>,
-    message: Option<JsonlMessage>,
-    #[serde(rename = "costUSD")]
-    cost_usd: Option<f64>,
-    timestamp: Option<String>,
-    session_id: Option<String>,
-    cwd: Option<String>,
-}
-
-#[derive(Debug, Deserialize, Default)]
-#[serde(rename_all = "camelCase")]
-struct JsonlMessage {
-    id: Option<String>,
-    model: Option<String>,
-    usage: Option<JsonlUsage>,
-    content: Option<Value>,
-}
-
-#[derive(Debug, Deserialize, Default)]
-struct JsonlUsage {
-    input_tokens: Option<u64>,
-    output_tokens: Option<u64>,
-    cache_creation_input_tokens: Option<u64>,
-    cache_read_input_tokens: Option<u64>,
-}
+use std::path::Path;
 
 #[derive(Debug, Clone)]
 struct FileContext {
     session_id: String,
     project_hash: String,
     is_subagent: bool,
-}
-
-pub fn discover_jsonl_files(projects_dir: &Path) -> Vec<PathBuf> {
-    let pattern = format!("{}/**/*.jsonl", projects_dir.display());
-    let mut files = glob(&pattern)
-        .ok()
-        .into_iter()
-        .flat_map(|entries| entries.flatten())
-        .filter(|path| path.is_file())
-        .collect::<Vec<_>>();
-    files.sort();
-    files
 }
 
 pub fn read_all_jsonl(projects_dir: &Path, year: Option<i32>) -> Vec<AssistantEntry> {

@@ -1,66 +1,30 @@
+use crate::readers::discovery::{discover_jsonl_files, discover_session_files};
 use crate::readers::jsonl::{decode_project_hash, derive_project_name};
+use crate::readers::wire::JsonlRecord;
 use crate::{
     parse_timestamp, timestamp_year, SessionBreakdown, SessionPrompt, SessionSummary,
     SubagentSummary, TokenUsage,
 };
-use glob::glob;
-use serde::Deserialize;
 use serde_json::Value;
 use std::collections::{BTreeMap, HashSet};
 use std::fs;
 use std::path::Path;
 
-#[derive(Debug, Deserialize, Default)]
-#[serde(rename_all = "camelCase")]
-struct JsonlRecord {
-    #[serde(rename = "type")]
-    record_type: Option<String>,
-    #[serde(default)]
-    is_sidechain: bool,
-    message: Option<JsonlMessage>,
-    #[serde(rename = "costUSD")]
-    cost_usd: Option<f64>,
-    timestamp: Option<String>,
-    session_id: Option<String>,
-    cwd: Option<String>,
-    entrypoint: Option<String>,
-}
-
-#[derive(Debug, Deserialize, Default)]
-#[serde(rename_all = "camelCase")]
-struct JsonlMessage {
-    id: Option<String>,
-    model: Option<String>,
-    usage: Option<JsonlUsage>,
-    content: Option<Value>,
-}
-
-#[derive(Debug, Deserialize, Default)]
-struct JsonlUsage {
-    input_tokens: Option<u64>,
-    output_tokens: Option<u64>,
-    cache_creation_input_tokens: Option<u64>,
-    cache_read_input_tokens: Option<u64>,
-}
-
 pub fn read_session_breakdown(projects_dir: &Path, year: Option<i32>) -> SessionBreakdown {
-    let pattern = format!("{}/{}/*.jsonl", projects_dir.display(), "*");
     let mut sessions = Vec::new();
 
-    if let Ok(paths) = glob(&pattern) {
-        for path in paths.flatten().filter(|path| path.is_file()) {
-            let Some(project_hash) = path
-                .parent()
-                .and_then(Path::file_name)
-                .map(|value| value.to_string_lossy().to_string())
-            else {
-                continue;
-            };
+    for path in discover_session_files(projects_dir) {
+        let Some(project_hash) = path
+            .parent()
+            .and_then(Path::file_name)
+            .map(|value| value.to_string_lossy().to_string())
+        else {
+            continue;
+        };
 
-            if let Some(session) = parse_session_file(&path, &project_hash, false, year) {
-                if session.total_tokens > 0 {
-                    sessions.push(session);
-                }
+        if let Some(session) = parse_session_file(&path, &project_hash, false, year) {
+            if session.total_tokens > 0 {
+                sessions.push(session);
             }
         }
     }
@@ -207,23 +171,20 @@ fn parse_session_file(
             .map(|dir| dir.join("subagents"));
 
         if let Some(subagent_dir) = subagent_dir {
-            let pattern = format!("{}/**/*.jsonl", subagent_dir.display());
-            if let Ok(paths) = glob(&pattern) {
-                for path in paths.flatten().filter(|path| path.is_file()) {
-                    if let Some(subagent) = parse_session_file(&path, project_hash, true, year) {
-                        if subagent.total_tokens > 0 {
-                            subagents.push(SubagentSummary {
-                                session_id: subagent.session_id.clone(),
-                                timestamp_start: subagent.timestamp_start.clone(),
-                                duration_minutes: subagent.duration_minutes,
-                                total_tokens: subagent.total_tokens,
-                                usage: subagent.usage.clone(),
-                                first_prompt: subagent.first_prompt.clone(),
-                                project_path: subagent.project_path.clone(),
-                                project_name: Some(subagent.project_name.clone()),
-                                parent_session_id: Some(session_id.clone()),
-                            });
-                        }
+            for path in discover_jsonl_files(&subagent_dir) {
+                if let Some(subagent) = parse_session_file(&path, project_hash, true, year) {
+                    if subagent.total_tokens > 0 {
+                        subagents.push(SubagentSummary {
+                            session_id: subagent.session_id.clone(),
+                            timestamp_start: subagent.timestamp_start.clone(),
+                            duration_minutes: subagent.duration_minutes,
+                            total_tokens: subagent.total_tokens,
+                            usage: subagent.usage.clone(),
+                            first_prompt: subagent.first_prompt.clone(),
+                            project_path: subagent.project_path.clone(),
+                            project_name: Some(subagent.project_name.clone()),
+                            parent_session_id: Some(session_id.clone()),
+                        });
                     }
                 }
             }

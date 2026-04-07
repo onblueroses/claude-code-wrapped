@@ -148,7 +148,6 @@ version = "0.1.0"
 dependencies = [
  "chrono",
  "clap",
- "glob",
  "serde",
  "serde_json",
  "termcolor",
@@ -171,10 +170,6 @@ name = "find-msvc-tools"
 version = "0.1.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5baebc0774151f905a1a2cc41989300b1e6fbb29aff0ceffa1064fdd3088d582"
-
-[[package]]
-name = "glob"
-version = "0.3.999"
 
 [[package]]
 name = "heck"

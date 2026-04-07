@@ -17,7 +17,7 @@ use clap::Parser;
 use std::collections::{BTreeMap, HashMap};
 use std::error::Error;
 use std::fs;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::process::Command;
 
 #[derive(Debug, Parser)]
@@ -51,56 +51,90 @@ fn main() {
     }
 }
 
+struct BuiltReport {
+    report: Report,
+    entry_count: usize,
+}
+
 fn run() -> Result<(), Box<dyn Error>> {
     let cli = Cli::parse();
     let selected_year = cli.year.unwrap_or_else(|| Utc::now().year());
 
     let Some(home) = home_dir() else {
-        if cli.json {
-            println!(
-                "{}",
-                serde_json::json!({"error": "home directory could not be resolved", "year": selected_year})
-            );
-            std::process::exit(1);
-        }
-        println!("Claude Code home directory could not be resolved.");
-        return Ok(());
+        return exit_with_message(
+            &cli,
+            selected_year,
+            "home directory could not be resolved",
+            "Claude Code home directory could not be resolved.".to_string(),
+        );
     };
 
     let projects_dir = home.join(".claude").join("projects");
     if !projects_dir.exists() {
-        if cli.json {
-            println!(
-                "{}",
-                serde_json::json!({"error": "~/.claude/projects not found", "year": selected_year})
-            );
-            std::process::exit(1);
-        }
-        println!(
-            "Claude Code data directory not found at {}.\nExpected JSONL files under ~/.claude/projects/. Nothing to analyze.",
-            projects_dir.display()
-        );
-        return Ok(());
-    }
-
-    let entries = read_all_jsonl(&projects_dir, Some(selected_year));
-    let session_breakdown = read_session_breakdown(&projects_dir, Some(selected_year));
-    if entries.is_empty() {
-        if cli.json {
-            println!(
-                "{}",
-                serde_json::json!({"error": "no records found", "year": selected_year})
-            );
-            std::process::exit(1);
-        }
-        println!(
-            "No Claude Code assistant usage records were found for {} in {}.",
+        return exit_with_message(
+            &cli,
             selected_year,
-            projects_dir.display()
+            "~/.claude/projects not found",
+            format!(
+                "Claude Code data directory not found at {}.\nExpected JSONL files under ~/.claude/projects/. Nothing to analyze.",
+                projects_dir.display()
+            ),
         );
+    }
+
+    let Some(built_report) = build_report(selected_year, &projects_dir)? else {
+        return exit_with_message(
+            &cli,
+            selected_year,
+            "no records found",
+            format!(
+                "No Claude Code assistant usage records were found for {} in {}.",
+                selected_year,
+                projects_dir.display()
+            ),
+        );
+    };
+
+    if cli.json {
+        println!("{}", serde_json::to_string_pretty(&built_report.report)?);
         return Ok(());
     }
 
+    let cwd = std::env::current_dir()?;
+    let outputs = write_outputs(&cwd, &built_report.report, &cli)?;
+    print_summary(
+        built_report.entry_count,
+        selected_year,
+        &built_report.report,
+        &outputs,
+    );
+    Ok(())
+}
+
+fn exit_with_message(
+    cli: &Cli,
+    year: i32,
+    json_error: &str,
+    human_message: String,
+) -> Result<(), Box<dyn Error>> {
+    if cli.json {
+        println!("{}", serde_json::json!({"error": json_error, "year": year}));
+        std::process::exit(1);
+    }
+    println!("{human_message}");
+    Ok(())
+}
+
+fn build_report(
+    selected_year: i32,
+    projects_dir: &Path,
+) -> Result<Option<BuiltReport>, Box<dyn Error>> {
+    let entries = read_all_jsonl(projects_dir, Some(selected_year));
+    if entries.is_empty() {
+        return Ok(None);
+    }
+
+    let session_breakdown = read_session_breakdown(projects_dir, Some(selected_year));
     let daily = aggregate_daily(&entries);
     let project_breakdown = aggregate_by_project(&entries);
     let cost_analysis = analyze_usage(selected_year, &daily, &session_breakdown);
@@ -135,48 +169,54 @@ fn run() -> Result<(), Box<dyn Error>> {
     };
     report.wrapped_story = build_wrapped_story(&report, &entries);
 
-    if cli.json {
-        println!("{}", serde_json::to_string_pretty(&report)?);
-        return Ok(());
-    }
+    Ok(Some(BuiltReport {
+        report,
+        entry_count: entries.len(),
+    }))
+}
 
-    let cwd = std::env::current_dir()?;
+fn write_outputs(cwd: &Path, report: &Report, cli: &Cli) -> Result<Vec<PathBuf>, Box<dyn Error>> {
     let html_path = cwd.join("claude-code-wrapped.html");
-    fs::write(&html_path, render_html(&report))?;
+    fs::write(&html_path, render_html(report))?;
 
     let mut outputs = vec![html_path.clone()];
-
     if cli.markdown {
         let markdown_path = cwd.join("claude-code-wrapped.md");
-        fs::write(&markdown_path, render_markdown(&report))?;
+        fs::write(&markdown_path, render_markdown(report))?;
         outputs.push(markdown_path);
     }
 
     if cli.card {
         let card_path = cwd.join("claude-code-wrapped-card.html");
-        fs::write(&card_path, render_share_card(&report))?;
+        fs::write(&card_path, render_share_card(report))?;
         outputs.push(card_path.clone());
-        if !cli.no_open && !cli.json {
+        if !cli.no_open {
             let _ = open_in_browser(&card_path);
         }
     }
 
     if cli.archive {
-        let written = write_archive(&cwd.join("wrapped-archive"), &report)?;
-        if !cli.json {
-            println!(
-                "  ✓ Prompt archive written to: {}/ ({} project{})",
-                cwd.join("wrapped-archive").display(),
-                written,
-                if written == 1 { "" } else { "s" }
-            );
-        }
+        let archive_dir = cwd.join("wrapped-archive");
+        let written = write_archive(&archive_dir, report)?;
+        println!(
+            "  ✓ Prompt archive written to: {}/ ({} project{})",
+            archive_dir.display(),
+            written,
+            if written == 1 { "" } else { "s" }
+        );
     }
 
+    if !cli.no_open && !cli.card {
+        let _ = open_in_browser(&html_path);
+    }
+
+    Ok(outputs)
+}
+
+fn print_summary(entry_count: usize, selected_year: i32, report: &Report, outputs: &[PathBuf]) {
     println!(
         "  ✓ {} assistant usage entries parsed for {}",
-        entries.len(),
-        selected_year
+        entry_count, selected_year
     );
     println!(
         "  ✓ {} active day buckets found",
@@ -186,16 +226,10 @@ fn run() -> Result<(), Box<dyn Error>> {
         "  ✓ {} sessions summarized from JSONL",
         report.session_breakdown.sessions.len()
     );
-    render_terminal(&report);
-    for path in &outputs {
+    render_terminal(report);
+    for path in outputs {
         println!("  ✓ Wrote {}", path.display());
     }
-
-    if !cli.no_open && !cli.card {
-        let _ = open_in_browser(&html_path);
-    }
-
-    Ok(())
 }
 
 fn write_archive(archive_dir: &Path, report: &Report) -> Result<usize, Box<dyn Error>> {

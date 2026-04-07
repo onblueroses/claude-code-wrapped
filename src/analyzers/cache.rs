@@ -63,12 +63,13 @@ pub fn detect_inflection_points(daily_from_jsonl: &[DailyAggregate]) -> Option<I
         return None;
     }
 
-    let sorted = daily_from_jsonl
+    // Only days with real output can participate in the before/after efficiency windows.
+    let active_days = daily_from_jsonl
         .iter()
         .filter(|day| day.output_tokens > 0)
         .cloned()
         .collect::<Vec<_>>();
-    if sorted.len() < 5 {
+    if active_days.len() < 5 {
         return None;
     }
 
@@ -77,9 +78,9 @@ pub fn detect_inflection_points(daily_from_jsonl: &[DailyAggregate]) -> Option<I
     let mut best_improvement: Option<InflectionPoint> = None;
     let mut best_score = 0.0;
 
-    for index in 3..=sorted.len().saturating_sub(3) {
-        let before = &sorted[index.saturating_sub(7)..index];
-        let after = &sorted[index..sorted.len().min(index + 7)];
+    for index in 3..=active_days.len().saturating_sub(3) {
+        let before = &active_days[index.saturating_sub(7)..index];
+        let after = &active_days[index..active_days.len().min(index + 7)];
         let before_ratio = compute_ratio(before);
         let after_ratio = compute_ratio(after);
 
@@ -92,7 +93,7 @@ pub fn detect_inflection_points(daily_from_jsonl: &[DailyAggregate]) -> Option<I
             if multiplier >= 1.5 && multiplier > worst_score {
                 worst_score = multiplier;
                 worst_degradation = Some(build_result(
-                    &sorted[index].date,
+                    &active_days[index].date,
                     before_ratio,
                     after_ratio,
                     multiplier,
@@ -106,7 +107,7 @@ pub fn detect_inflection_points(daily_from_jsonl: &[DailyAggregate]) -> Option<I
             if multiplier >= 1.5 && multiplier > best_score {
                 best_score = multiplier;
                 best_improvement = Some(build_result(
-                    &sorted[index].date,
+                    &active_days[index].date,
                     before_ratio,
                     after_ratio,
                     multiplier,
@@ -185,13 +186,12 @@ fn calculate_grade(
             .round() as u64;
 
     // Cap grades when the efficiency ratio is pathologically high. Ratios above 1500:1
-    // signal stale long-context sessions with negligible output — generate_recommendations()
-    // already treats these as critically degraded. Normal agentic sessions (e.g. 700:1)
-    // are not capped; only genuinely extreme values trigger this floor.
+    // cap the grade at C; ratios above 2000:1 cap it at D. Normal agentic sessions
+    // (e.g. 700:1) are not capped; only genuinely extreme values trigger this override.
     let composite = if all_time_ratio > 2000 {
-        composite.min(49) // C at most
+        composite.min(49) // D at most
     } else if all_time_ratio > 1500 {
-        composite.min(64) // B at most
+        composite.min(64) // C at most
     } else {
         composite
     };

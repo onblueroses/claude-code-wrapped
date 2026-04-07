@@ -5,18 +5,91 @@ use crate::{
 };
 use std::collections::{BTreeMap, BTreeSet};
 
+struct StoryMetrics {
+    active_day_count: usize,
+    favorite_weekday: Option<NamedCount>,
+    total_messages: usize,
+    total_tokens: u64,
+    average_messages_per_active_day: u64,
+    longest_streak: u64,
+    power_hour: Option<crate::TimeBucket>,
+    top_tool: Option<TopTool>,
+    top_project: Option<TopProject>,
+    biggest_session: Option<crate::SessionSummary>,
+    biggest_subagent: Option<crate::SubagentSummary>,
+    prompt_ratio: PromptRatio,
+    next_move: Option<crate::Recommendation>,
+    archetype: StoryCard,
+    cache_mood: CacheMood,
+    momentum: StoryCard,
+}
+
 pub fn build_wrapped_story(report: &Report, entries: &[AssistantEntry]) -> WrappedStory {
-    let daily_costs = &report.cost_analysis.daily_costs;
-    let active_days = daily_costs
+    let metrics = collect_story_metrics(report, entries);
+    let hero = build_hero_stats(
+        report,
+        metrics.active_day_count,
+        metrics.total_messages,
+        metrics.average_messages_per_active_day,
+        &metrics.prompt_ratio,
+        &metrics.cache_mood,
+    );
+    let highlights = build_highlights(report, &metrics);
+    let summary = format!(
+        "{}. {}. {} is your power hour.",
+        metrics.archetype.title,
+        metrics.cache_mood.title,
+        metrics
+            .power_hour
+            .as_ref()
+            .map(|bucket| bucket.label.clone())
+            .unwrap_or_else(|| "Unknown".to_string())
+    );
+    let share_text = if let Some(project) = metrics.top_project.as_ref() {
+        format!(
+            "{summary} {} carried {}% of your output.",
+            project.name, project.share_pct
+        )
+    } else {
+        summary.clone()
+    };
+
+    WrappedStory {
+        summary: summary.clone(),
+        hero,
+        highlights,
+        archetype: metrics.archetype,
+        cache_mood: metrics.cache_mood,
+        momentum: metrics.momentum,
+        power_hour: metrics.power_hour,
+        favorite_weekday: metrics.favorite_weekday,
+        total_messages: metrics.total_messages,
+        total_tokens: metrics.total_tokens,
+        average_messages_per_active_day: metrics.average_messages_per_active_day,
+        longest_streak: metrics.longest_streak,
+        top_tool: metrics.top_tool,
+        top_project: metrics.top_project,
+        biggest_session: metrics.biggest_session,
+        biggest_subagent: metrics.biggest_subagent,
+        prompt_ratio: metrics.prompt_ratio,
+        next_move: metrics.next_move,
+        share_text,
+    }
+}
+
+fn collect_story_metrics(report: &Report, entries: &[AssistantEntry]) -> StoryMetrics {
+    let active_days = report
+        .cost_analysis
+        .daily_costs
         .iter()
         .filter(|day| day.message_count > 0)
         .collect::<Vec<_>>();
-    let total_messages = daily_costs
+    let total_messages = report
+        .cost_analysis
+        .daily_costs
         .iter()
         .map(|day| day.message_count)
         .sum::<usize>();
-    let totals = &report.cost_analysis.totals;
-    let total_tokens = totals.total_tokens();
     let average_messages_per_active_day = if active_days.is_empty() {
         0
     } else {
@@ -28,29 +101,46 @@ pub fn build_wrapped_story(report: &Report, entries: &[AssistantEntry]) -> Wrapp
             .map(|day| day.date.clone())
             .collect::<Vec<_>>(),
     );
-    let favorite_weekday = favorite_weekday(&active_days);
-    let power_hour = crate::busiest_hour(entries);
-    let top_tool = top_tool(entries);
-    let top_project = top_project(&report.project_breakdown);
-    let biggest_session = report.session_breakdown.sessions.first().cloned();
-    let biggest_subagent = report.session_breakdown.costly_subagents.first().cloned();
-    let prompt_ratio = prompt_ratio(&report.session_breakdown);
-    let next_move = report.recommendations.first().cloned();
-    let archetype = archetype(&report.model_routing, average_messages_per_active_day);
-    let cache_mood = cache_mood(
-        &report.cache_health.grade.letter,
-        report.cache_health.efficiency_ratio,
-    );
-    let momentum = momentum(longest_streak, average_messages_per_active_day);
 
-    let hero = vec![
+    StoryMetrics {
+        active_day_count: active_days.len(),
+        favorite_weekday: favorite_weekday(&active_days),
+        total_messages,
+        total_tokens: report.cost_analysis.totals.total_tokens(),
+        average_messages_per_active_day,
+        longest_streak,
+        power_hour: crate::busiest_hour(entries),
+        top_tool: top_tool(entries),
+        top_project: top_project(&report.project_breakdown),
+        biggest_session: report.session_breakdown.sessions.first().cloned(),
+        biggest_subagent: report.session_breakdown.costly_subagents.first().cloned(),
+        prompt_ratio: prompt_ratio(&report.session_breakdown),
+        next_move: report.recommendations.first().cloned(),
+        archetype: archetype(&report.model_routing, average_messages_per_active_day),
+        cache_mood: cache_mood(
+            &report.cache_health.grade.letter,
+            report.cache_health.efficiency_ratio,
+        ),
+        momentum: momentum(longest_streak, average_messages_per_active_day),
+    }
+}
+
+fn build_hero_stats(
+    report: &Report,
+    active_day_count: usize,
+    total_messages: usize,
+    average_messages_per_active_day: u64,
+    prompt_ratio: &PromptRatio,
+    cache_mood: &CacheMood,
+) -> Vec<HeroStat> {
+    vec![
         HeroStat {
             label: "Equivalent spend".to_string(),
             value: format_currency(report.cost_analysis.total_cost),
             note: format!(
                 "{} active day{}",
-                active_days.len(),
-                if active_days.len() == 1 { "" } else { "s" }
+                active_day_count,
+                if active_day_count == 1 { "" } else { "s" }
             ),
         },
         HeroStat {
@@ -84,149 +174,122 @@ pub fn build_wrapped_story(report: &Report, entries: &[AssistantEntry]) -> Wrapp
                 crate::with_grouping(prompt_ratio.tool as u64)
             ),
         },
-    ];
+    ]
+}
 
-    let mut highlights = Vec::new();
-    highlights.push(Highlight {
-        eyebrow: "Archetype".to_string(),
-        title: archetype.title.clone(),
-        note: archetype.note.clone(),
-    });
-    highlights.push(Highlight {
-        eyebrow: "Power hour".to_string(),
-        title: power_hour
-            .as_ref()
-            .map(|bucket| bucket.label.clone())
-            .unwrap_or_else(|| "Time data still warming up".to_string()),
-        note: power_hour
-            .as_ref()
-            .map(|bucket| {
-                format!(
-                    "{}% of assistant turns land around {}. {}",
-                    bucket.share_pct,
-                    bucket.label,
-                    hour_mood(bucket.hour)
-                )
-            })
-            .unwrap_or_else(|| "Run a few more sessions to get a reliable power hour.".to_string()),
-    });
-    highlights.push(Highlight {
-        eyebrow: "Main character project".to_string(),
-        title: top_project
-            .as_ref()
-            .map(|project| project.name.clone())
-            .unwrap_or_else(|| "No dominant project yet".to_string()),
-        note: top_project
-            .as_ref()
-            .map(|project| {
-                format!(
-                    "{}% of output tokens across {} session{}",
-                    project.share_pct,
-                    project.session_count,
-                    if project.session_count == 1 { "" } else { "s" }
-                )
-            })
-            .unwrap_or_else(|| {
-                "Run a few more sessions to unlock project-level story cards.".to_string()
-            }),
-    });
-    highlights.push(if let Some(session) = &biggest_session {
+fn build_highlights(report: &Report, metrics: &StoryMetrics) -> Vec<Highlight> {
+    vec![
         Highlight {
-            eyebrow: "Biggest session".to_string(),
-            title: format_tokens(session.total_tokens),
-            note: session_note(session),
-        }
-    } else if let Some(peak_day) = &report.cost_analysis.peak_day {
-        Highlight {
-            eyebrow: "Peak day".to_string(),
-            title: format_currency(peak_day.cost),
-            note: format!("{} was your loudest day.", peak_day.date),
-        }
-    } else {
-        Highlight {
-            eyebrow: "Peak day".to_string(),
-            title: "$0.00".to_string(),
-            note: "Need more history for a peak-day read.".to_string(),
-        }
-    });
-    highlights.push(if let Some(subagent) = &biggest_subagent {
-        Highlight {
-            eyebrow: "Subagent cameo".to_string(),
-            title: format_tokens(subagent.total_tokens),
-            note: format!(
-                "{} leaned on background help. {}",
-                subagent
-                    .project_name
-                    .clone()
-                    .unwrap_or_else(|| "A project".to_string()),
-                trim_text(
-                    subagent
-                        .first_prompt
-                        .as_deref()
-                        .unwrap_or("No prompt preview available."),
-                    92
-                )
-            ),
-        }
-    } else {
-        Highlight {
-            eyebrow: "Rhythm".to_string(),
-            title: momentum.title.clone(),
-            note: momentum.note.clone(),
-        }
-    });
-    highlights.push(Highlight {
-        eyebrow: "Next season".to_string(),
-        title: next_move
-            .as_ref()
-            .map(|rec| rec.title.clone())
-            .unwrap_or_else(|| "No obvious fixes right now".to_string()),
-        note: next_move
-            .as_ref()
-            .map(|rec| rec.action.clone())
-            .unwrap_or_else(|| {
-                "Your setup looks stable. Keep the sessions clean and the cache warm.".to_string()
-            }),
-    });
-
-    let summary = format!(
-        "{}. {}. {} is your power hour.",
-        archetype.title,
-        cache_mood.title,
-        power_hour
-            .as_ref()
-            .map(|bucket| bucket.label.clone())
-            .unwrap_or_else(|| "Unknown".to_string())
-    );
-
-    WrappedStory {
-        summary: summary.clone(),
-        hero,
-        highlights,
-        archetype,
-        cache_mood,
-        momentum,
-        power_hour,
-        favorite_weekday,
-        total_messages,
-        total_tokens,
-        average_messages_per_active_day,
-        longest_streak,
-        top_tool,
-        top_project: top_project.clone(),
-        biggest_session,
-        biggest_subagent,
-        prompt_ratio,
-        next_move: next_move.clone(),
-        share_text: if let Some(project) = top_project {
-            format!(
-                "{summary} {} carried {}% of your output.",
-                project.name, project.share_pct
-            )
-        } else {
-            summary
+            eyebrow: "Archetype".to_string(),
+            title: metrics.archetype.title.clone(),
+            note: metrics.archetype.note.clone(),
         },
-    }
+        Highlight {
+            eyebrow: "Power hour".to_string(),
+            title: metrics
+                .power_hour
+                .as_ref()
+                .map(|bucket| bucket.label.clone())
+                .unwrap_or_else(|| "Time data still warming up".to_string()),
+            note: metrics
+                .power_hour
+                .as_ref()
+                .map(|bucket| {
+                    format!(
+                        "{}% of assistant turns land around {}. {}",
+                        bucket.share_pct,
+                        bucket.label,
+                        hour_mood(bucket.hour)
+                    )
+                })
+                .unwrap_or_else(|| {
+                    "Run a few more sessions to get a reliable power hour.".to_string()
+                }),
+        },
+        Highlight {
+            eyebrow: "Main character project".to_string(),
+            title: metrics
+                .top_project
+                .as_ref()
+                .map(|project| project.name.clone())
+                .unwrap_or_else(|| "No dominant project yet".to_string()),
+            note: metrics
+                .top_project
+                .as_ref()
+                .map(|project| {
+                    format!(
+                        "{}% of output tokens across {} session{}",
+                        project.share_pct,
+                        project.session_count,
+                        if project.session_count == 1 { "" } else { "s" }
+                    )
+                })
+                .unwrap_or_else(|| {
+                    "Run a few more sessions to unlock project-level story cards.".to_string()
+                }),
+        },
+        if let Some(session) = metrics.biggest_session.as_ref() {
+            Highlight {
+                eyebrow: "Biggest session".to_string(),
+                title: format_tokens(session.total_tokens),
+                note: session_note(session),
+            }
+        } else if let Some(peak_day) = &report.cost_analysis.peak_day {
+            Highlight {
+                eyebrow: "Peak day".to_string(),
+                title: format_currency(peak_day.cost),
+                note: format!("{} was your loudest day.", peak_day.date),
+            }
+        } else {
+            Highlight {
+                eyebrow: "Peak day".to_string(),
+                title: "$0.00".to_string(),
+                note: "Need more history for a peak-day read.".to_string(),
+            }
+        },
+        if let Some(subagent) = metrics.biggest_subagent.as_ref() {
+            Highlight {
+                eyebrow: "Subagent cameo".to_string(),
+                title: format_tokens(subagent.total_tokens),
+                note: format!(
+                    "{} leaned on background help. {}",
+                    subagent
+                        .project_name
+                        .clone()
+                        .unwrap_or_else(|| "A project".to_string()),
+                    trim_text(
+                        subagent
+                            .first_prompt
+                            .as_deref()
+                            .unwrap_or("No prompt preview available."),
+                        92
+                    )
+                ),
+            }
+        } else {
+            Highlight {
+                eyebrow: "Rhythm".to_string(),
+                title: metrics.momentum.title.clone(),
+                note: metrics.momentum.note.clone(),
+            }
+        },
+        Highlight {
+            eyebrow: "Next season".to_string(),
+            title: metrics
+                .next_move
+                .as_ref()
+                .map(|rec| rec.title.clone())
+                .unwrap_or_else(|| "No obvious fixes right now".to_string()),
+            note: metrics
+                .next_move
+                .as_ref()
+                .map(|rec| rec.action.clone())
+                .unwrap_or_else(|| {
+                    "Your setup looks stable. Keep the sessions clean and the cache warm."
+                        .to_string()
+                }),
+        },
+    ]
 }
 
 fn archetype(

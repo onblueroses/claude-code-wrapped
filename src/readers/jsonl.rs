@@ -210,22 +210,24 @@ pub fn aggregate_by_project(entries: &[AssistantEntry]) -> Vec<ProjectSummary> {
         }
 
         let entry_epoch = crate::parse_timestamp(&entry.timestamp).map(|dt| dt.timestamp());
-        match (&project.first_seen, &project.last_seen) {
-            (None, None) => {
-                project.first_seen = Some(entry.timestamp.clone());
-                project.last_seen = Some(entry.timestamp.clone());
-            }
-            (Some(first), Some(last)) => {
-                let first_epoch = crate::parse_timestamp(first).map(|dt| dt.timestamp());
-                let last_epoch = crate::parse_timestamp(last).map(|dt| dt.timestamp());
-                if entry_epoch < first_epoch {
+        if let Some(entry_epoch) = entry_epoch {
+            match (&project.first_seen, &project.last_seen) {
+                (None, None) => {
                     project.first_seen = Some(entry.timestamp.clone());
-                }
-                if entry_epoch > last_epoch {
                     project.last_seen = Some(entry.timestamp.clone());
                 }
+                (Some(first), Some(last)) => {
+                    let first_epoch = crate::parse_timestamp(first).map(|dt| dt.timestamp());
+                    let last_epoch = crate::parse_timestamp(last).map(|dt| dt.timestamp());
+                    if first_epoch.is_some_and(|first_epoch| entry_epoch < first_epoch) {
+                        project.first_seen = Some(entry.timestamp.clone());
+                    }
+                    if last_epoch.is_some_and(|last_epoch| entry_epoch > last_epoch) {
+                        project.last_seen = Some(entry.timestamp.clone());
+                    }
+                }
+                _ => {}
             }
-            _ => {}
         }
 
         if let Some(cwd) = &entry.cwd {

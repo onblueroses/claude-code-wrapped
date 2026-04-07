@@ -273,6 +273,8 @@ fn hero_stats_html(report: &Report) -> String {
         .join("")
 }
 
+/// Keeps cents on 4-digit totals for the slide hero so the headline cost matches
+/// billed spend more precisely than the compact `format_currency` summary style.
 fn total_cost_display(report: &Report) -> String {
     let cost = report.cost_analysis.total_cost;
     if cost >= 1000.0 {

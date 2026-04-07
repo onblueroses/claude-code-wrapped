@@ -69,7 +69,7 @@ pub fn detect_inflection_points(daily_from_jsonl: &[DailyAggregate]) -> Option<I
         .filter(|day| day.output_tokens > 0)
         .cloned()
         .collect::<Vec<_>>();
-    if active_days.len() < 5 {
+    if active_days.len() < 6 {
         return None;
     }
 

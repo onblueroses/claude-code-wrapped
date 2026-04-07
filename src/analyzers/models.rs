@@ -4,6 +4,8 @@ use crate::{
 };
 use std::collections::{BTreeMap, HashMap};
 
+const THROTTLED_HOURS: std::ops::RangeInclusive<usize> = 12..=18;
+
 pub fn detect_anomalies(cost_analysis: &CostAnalysis) -> AnomalyReport {
     let daily_costs = &cost_analysis.daily_costs;
     if daily_costs.len() < 3 {
@@ -185,7 +187,9 @@ pub fn analyze_session_intelligence(
         }
     }
 
-    let peak_overlap_messages = hour_distribution[12..=18].iter().sum::<usize>();
+    let peak_overlap_messages = hour_distribution[THROTTLED_HOURS.clone()]
+        .iter()
+        .sum::<usize>();
     let peak_overlap_pct = if total_hour_messages > 0 {
         ((peak_overlap_messages as f64 / total_hour_messages as f64) * 100.0).round() as u64
     } else {

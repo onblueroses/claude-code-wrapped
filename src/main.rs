@@ -285,13 +285,7 @@ fn write_archive(archive_dir: &Path, report: &Report) -> Result<usize, Box<dyn E
                 ));
                 lines.push(String::new());
             }
-            let cutoff = prompt
-                .text
-                .char_indices()
-                .nth(500)
-                .map(|(i, _)| i)
-                .unwrap_or(prompt.text.len());
-            let display = if prompt.text.len() > 500 {
+            let display = if let Some((cutoff, _)) = prompt.text.char_indices().nth(500) {
                 format!("{}... [truncated]", &prompt.text[..cutoff])
             } else {
                 prompt.text.clone()

@@ -15,6 +15,8 @@ struct RuleContext<'a> {
 
 type RuleFn = fn(&RuleContext<'_>) -> Option<Recommendation>;
 
+const FALLBACK_RULE: RuleFn = rule_no_dominant_inefficiency;
+
 const RULES: &[RuleFn] = &[
     rule_inflection_worsened,
     rule_inflection_improved,
@@ -29,7 +31,6 @@ const RULES: &[RuleFn] = &[
     rule_scoped_prompts,
     rule_throttled_hours,
     rule_cache_savings,
-    rule_no_dominant_inefficiency,
 ];
 
 pub fn generate_recommendations(
@@ -50,12 +51,12 @@ pub fn generate_recommendations(
         model_routing,
         project_breakdown,
     };
-    let mut recs = RULES[..RULES.len() - 1]
+    let mut recs = RULES
         .iter()
         .filter_map(|rule| rule(&context))
         .collect::<Vec<_>>();
     if recs.is_empty() {
-        recs.extend(RULES[RULES.len() - 1](&context));
+        recs.extend(FALLBACK_RULE(&context));
     }
     recs.truncate(10);
     recs

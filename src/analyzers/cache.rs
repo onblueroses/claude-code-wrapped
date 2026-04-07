@@ -1,5 +1,5 @@
 use crate::{
-    CacheGrade, CacheHealth, CacheReason, CacheSavings, CacheSignals, DailyAggregate,
+    round_ratio, CacheGrade, CacheHealth, CacheReason, CacheSavings, CacheSignals, DailyAggregate,
     InflectionPoint, TokenUsage,
 };
 use chrono::NaiveDate;
@@ -285,14 +285,6 @@ fn format_date(date: &str) -> String {
     NaiveDate::parse_from_str(date, "%Y-%m-%d")
         .map(|value| value.format("%b %-d").to_string())
         .unwrap_or_else(|_| date.to_string())
-}
-
-fn round_ratio(numerator: u64, denominator: u64) -> u64 {
-    if denominator == 0 {
-        0
-    } else {
-        (numerator as f64 / denominator as f64).round() as u64
-    }
 }
 
 /// Returns `(savings_from_caching, overhead_from_breaks)` in dollars,

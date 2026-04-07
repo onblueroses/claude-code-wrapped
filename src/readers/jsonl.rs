@@ -1,7 +1,7 @@
 use crate::analyzers::cost::approximate_cost;
 use crate::{
-    timestamp_date_key, timestamp_year, AssistantEntry, DailyAggregate, ModelAggregate,
-    ProjectSummary,
+    round_ratio, timestamp_date_key, timestamp_year, AssistantEntry, DailyAggregate,
+    ModelAggregate, ProjectSummary,
 };
 use glob::glob;
 use serde::Deserialize;
@@ -401,14 +401,6 @@ fn extract_tool_names(content: Option<&Value>) -> Vec<String> {
             object.get("name")?.as_str().map(str::to_string)
         })
         .collect()
-}
-
-fn round_ratio(numerator: u64, denominator: u64) -> u64 {
-    if denominator == 0 {
-        0
-    } else {
-        (numerator as f64 / denominator as f64).round() as u64
-    }
 }
 
 fn resolved_entry_cost(entry: &AssistantEntry) -> f64 {

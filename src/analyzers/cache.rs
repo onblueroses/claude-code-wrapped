@@ -132,36 +132,24 @@ fn calculate_grade(
     cache_hit_rate: f64,
     estimated_breaks: usize,
 ) -> CacheGrade {
-    let hit_rate_score: u64 = if cache_hit_rate >= 90.0 {
+    // Grade is based on three signals. The efficiency ratio (cache_read / output)
+    // is intentionally excluded: it scales with context length and agentic session
+    // depth, so high values aren't a quality problem — they just mean long sessions.
+
+    // Hit rate: what fraction of context came from cache.
+    let hit_rate_score: u64 = if cache_hit_rate >= 85.0 {
         100
-    } else if cache_hit_rate >= 80.0 {
+    } else if cache_hit_rate >= 70.0 {
         85
-    } else if cache_hit_rate >= 60.0 {
+    } else if cache_hit_rate >= 50.0 {
         65
-    } else if cache_hit_rate >= 40.0 {
+    } else if cache_hit_rate >= 30.0 {
         40
     } else {
         15
     };
 
-    let ratio_score: u64 = if all_time_ratio <= 200 {
-        100
-    } else if all_time_ratio <= 400 {
-        85
-    } else if all_time_ratio <= 600 {
-        70
-    } else if all_time_ratio <= 800 {
-        55
-    } else if all_time_ratio <= 1000 {
-        40
-    } else if all_time_ratio <= 1500 {
-        25
-    } else if all_time_ratio <= 2000 {
-        15
-    } else {
-        5
-    };
-
+    // Trend: is cache efficiency improving or declining over recent days?
     let mut trend_score: u64 = 70;
     if daily_from_jsonl.len() >= 7 {
         let split = daily_from_jsonl.len().saturating_sub(7);
@@ -185,45 +173,66 @@ fn calculate_grade(
         }
     }
 
+    // Break score: cache breaks (context resets) hurt efficiency.
     let break_score = if estimated_breaks == 0 {
         100u32
     } else {
         (100u32).saturating_sub((estimated_breaks as u32).min(10) * 10)
     };
-    let composite = (hit_rate_score as f64 * 0.15
-        + ratio_score as f64 * 0.40
-        + trend_score as f64 * 0.30
-        + break_score as f64 * 0.15)
-        .round() as u64;
-    let min_signal = hit_rate_score
-        .min(ratio_score)
-        .min(trend_score)
-        .min(u64::from(break_score));
-    let capped = if min_signal <= 5 {
-        composite.min(38)
-    } else if min_signal <= 15 {
-        composite.min(48)
+
+    // hit_rate is the primary quality signal; trend and breaks are modifiers.
+    let composite =
+        (hit_rate_score as f64 * 0.60 + trend_score as f64 * 0.25 + break_score as f64 * 0.15)
+            .round() as u64;
+
+    // Cap grades when the efficiency ratio is pathologically high. Ratios above 1500:1
+    // signal stale long-context sessions with negligible output — generate_recommendations()
+    // already treats these as critically degraded. Normal agentic sessions (e.g. 700:1)
+    // are not capped; only genuinely extreme values trigger this floor.
+    let composite = if all_time_ratio > 2000 {
+        composite.min(49) // C at most
+    } else if all_time_ratio > 1500 {
+        composite.min(64) // B at most
     } else {
         composite
     };
 
-    let (letter, color, label) = if capped >= 75 {
+    let (letter, color, label) = if composite >= 80 {
         ("A", "#10b981", "Excellent")
-    } else if capped >= 60 {
+    } else if composite >= 65 {
         ("B", "#22d3ee", "Good")
-    } else if capped >= 45 {
+    } else if composite >= 50 {
         ("C", "#f59e0b", "Fair")
-    } else if capped >= 30 {
+    } else if composite >= 35 {
         ("D", "#f97316", "Poor")
     } else {
         ("F", "#ef4444", "Critical")
+    };
+
+    // ratio_score kept for JSON output / debugging; not used in grade calculation.
+    let ratio_score: u64 = if all_time_ratio <= 200 {
+        100
+    } else if all_time_ratio <= 400 {
+        85
+    } else if all_time_ratio <= 600 {
+        70
+    } else if all_time_ratio <= 800 {
+        55
+    } else if all_time_ratio <= 1000 {
+        40
+    } else if all_time_ratio <= 1500 {
+        25
+    } else if all_time_ratio <= 2000 {
+        15
+    } else {
+        5
     };
 
     CacheGrade {
         letter: letter.to_string(),
         color: color.to_string(),
         label: label.to_string(),
-        score: capped,
+        score: composite,
         signals: CacheSignals {
             hit_rate: hit_rate_score,
             ratio: ratio_score,

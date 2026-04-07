@@ -77,7 +77,15 @@ pub fn read_all_jsonl(projects_dir: &Path, year: Option<i32>) -> Vec<AssistantEn
 
         for line in raw.lines().filter(|line| !line.trim().is_empty()) {
             let Ok(record) = serde_json::from_str::<JsonlRecord>(line) else {
-                skipped_lines += 1;
+                // Only count as malformed if the line looks like intended JSON, not
+                // a truncated continuation fragment or stray whitespace.
+                // Use trim_start so leading-space records (e.g. indented lines or
+                // partial records whose opening brace was not the first byte) are
+                // still counted rather than silently discarded.
+                let trimmed = line.trim_start();
+                if trimmed.starts_with('{') || trimmed.starts_with('[') {
+                    skipped_lines += 1;
+                }
                 continue;
             };
 

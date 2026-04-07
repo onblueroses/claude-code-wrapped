@@ -36,14 +36,14 @@ fn story_builder_pipeline_matches_expected_sections() {
     let top_level = [
         serde_json::json!({
             "type": "user",
-            "userType": "human",
+            "userType": "external",
             "isSidechain": false,
             "timestamp": "2026-04-05T09:00:00.000Z",
             "message": { "content": "Build the demo app shell" }
         }),
         serde_json::json!({
             "type": "user",
-            "userType": "tool",
+            "userType": "external",
             "timestamp": "2026-04-05T09:01:00.000Z",
             "message": { "content": [{ "type": "tool_result", "content": "ok" }] }
         }),
@@ -95,7 +95,7 @@ fn story_builder_pipeline_matches_expected_sections() {
     let subagent = [
         serde_json::json!({
             "type": "user",
-            "userType": "human",
+            "userType": "external",
             "isSidechain": false,
             "timestamp": "2026-04-05T10:00:00.000Z",
             "message": { "content": "Search the docs" }

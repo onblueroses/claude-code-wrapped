@@ -15,7 +15,6 @@ use std::path::Path;
 struct JsonlRecord {
     #[serde(rename = "type")]
     record_type: Option<String>,
-    user_type: Option<String>,
     #[serde(default)]
     is_sidechain: bool,
     message: Option<JsonlMessage>,
@@ -167,21 +166,26 @@ fn parse_session_file(
                 let model_usage = model_totals.entry(model_name).or_default();
                 *model_usage += &usage;
             }
-            Some("user") if !record.is_sidechain && record.user_type.as_deref() != Some("tool") => {
+            Some("user") => {
                 let Some(message) = record.message else {
                     continue;
                 };
-                let text = extract_user_text(message.content.as_ref());
-                if !text.is_empty() {
-                    prompts.push(SessionPrompt {
-                        text,
-                        timestamp: Some(timestamp),
-                        entrypoint: record.entrypoint,
-                    });
+                // Distinguish tool results (content is an array of tool_result items)
+                // from human messages (content is a string or mixed array).
+                // Claude Code records always use userType="external" for both — the
+                // content shape is the only reliable discriminator.
+                if is_tool_result_content(message.content.as_ref()) {
+                    tool_message_count += 1;
+                } else if !record.is_sidechain {
+                    let text = extract_user_text(message.content.as_ref());
+                    if !text.is_empty() {
+                        prompts.push(SessionPrompt {
+                            text,
+                            timestamp: Some(timestamp),
+                            entrypoint: record.entrypoint,
+                        });
+                    }
                 }
-            }
-            Some("user") if record.user_type.as_deref() == Some("tool") => {
-                tool_message_count += 1;
             }
             _ => {}
         }
@@ -245,6 +249,21 @@ fn parse_session_file(
         prompts: prompts.into_iter().take(5).collect(),
         subagents,
     })
+}
+
+/// Returns true only when the content array is entirely tool_result items.
+/// Mixed arrays (e.g. a follow-up message that includes a tool_result plus text)
+/// fall through to `extract_user_text`, which already skips tool_result items.
+fn is_tool_result_content(content: Option<&Value>) -> bool {
+    match content {
+        Some(Value::Array(items)) if !items.is_empty() => items.iter().all(|item| {
+            item.as_object()
+                .and_then(|obj| obj.get("type"))
+                .and_then(Value::as_str)
+                == Some("tool_result")
+        }),
+        _ => false,
+    }
 }
 
 fn extract_user_text(content: Option<&Value>) -> String {

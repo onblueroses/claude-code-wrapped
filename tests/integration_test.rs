@@ -175,6 +175,20 @@ fn story_builder_pipeline_matches_expected_sections() {
     assert_eq!(report.wrapped_story.prompt_ratio.tool, 1);
     assert_eq!(report.wrapped_story.hero.len(), 5);
 
+    let json = serde_json::to_value(&report).unwrap();
+    assert!(json.get("generated_at").is_none());
+    assert!(json.get("wrapped_story").is_none());
+    assert_eq!(json["generatedAt"], "2026-04-06T12:00:00.000Z");
+    assert_eq!(json["year"], 2026);
+    assert_eq!(
+        json["sessionBreakdown"]["sessions"][0]["projectHash"],
+        "-work-demo-app"
+    );
+    assert_eq!(json["projectBreakdown"][0]["hash"], "-work-demo-app");
+    assert!(json["costAnalysis"]["dailyCosts"].is_array());
+    assert!(json["cacheHealth"]["savings"]["fromCaching"].is_number());
+    assert_eq!(json["wrappedStory"]["hero"].as_array().unwrap().len(), 5);
+
     let html = render_html(&report);
     assert!(html.contains("Claude Code Wrapped"));
     assert!(html.contains("Costliest sessions"));

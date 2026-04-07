@@ -17,7 +17,7 @@ type RuleFn = fn(&RuleContext<'_>) -> Option<Recommendation>;
 
 const FALLBACK_RULE: RuleFn = rule_no_dominant_inefficiency;
 
-const RULES: &[RuleFn] = &[
+const SIGNAL_RULES: &[RuleFn] = &[
     rule_inflection_worsened,
     rule_inflection_improved,
     rule_opus_heavy,
@@ -26,12 +26,12 @@ const RULES: &[RuleFn] = &[
     rule_cache_ratio_elevated,
     rule_cost_spikes,
     rule_dominant_project,
-    rule_claudeignore,
     rule_prompt_cache_idle_gaps,
-    rule_scoped_prompts,
     rule_throttled_hours,
     rule_cache_savings,
 ];
+
+const HYGIENE_RULES: &[RuleFn] = &[rule_claudeignore, rule_scoped_prompts];
 
 pub fn generate_recommendations(
     cost_analysis: &CostAnalysis,
@@ -51,12 +51,14 @@ pub fn generate_recommendations(
         model_routing,
         project_breakdown,
     };
-    let mut recs = RULES
+    let mut recs = SIGNAL_RULES
         .iter()
         .filter_map(|rule| rule(&context))
         .collect::<Vec<_>>();
     if recs.is_empty() {
         recs.extend(FALLBACK_RULE(&context));
+    } else {
+        recs.extend(HYGIENE_RULES.iter().filter_map(|rule| rule(&context)));
     }
     recs.truncate(10);
     recs
@@ -253,4 +255,67 @@ fn rule_no_dominant_inefficiency(context: &RuleContext<'_>) -> Option<Recommenda
         savings: "Stable season".to_string(),
         action: "Keep the current workflow steady and watch for regressions in cache ratio or session length next run.".to_string(),
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::generate_recommendations;
+    use crate::{
+        AnomalyReport, CacheHealth, CostAnalysis, InflectionPoint, ModelRouting, Recommendation,
+        SessionIntel,
+    };
+
+    fn recommendation_titles(recommendations: &[Recommendation]) -> Vec<&str> {
+        recommendations
+            .iter()
+            .map(|recommendation| recommendation.title.as_str())
+            .collect()
+    }
+
+    #[test]
+    fn worsened_inflection_recommendation_mentions_the_drop() {
+        let recommendations = generate_recommendations(
+            &CostAnalysis {
+                total_cost: 25.0,
+                ..CostAnalysis::default()
+            },
+            &CacheHealth::default(),
+            &AnomalyReport::default(),
+            &Some(InflectionPoint {
+                date: "2026-02-10".to_string(),
+                multiplier: 2.5,
+                direction: "worsened".to_string(),
+                ..InflectionPoint::default()
+            }),
+            &SessionIntel::default(),
+            &ModelRouting::default(),
+            &[],
+        );
+
+        assert!(recommendations
+            .iter()
+            .any(|recommendation| recommendation.title.contains("dropped 2.5x")));
+    }
+
+    #[test]
+    fn fallback_recommendation_fires_when_no_signals_trigger() {
+        let recommendations = generate_recommendations(
+            &CostAnalysis {
+                total_cost: 10.0,
+                ..CostAnalysis::default()
+            },
+            &CacheHealth::default(),
+            &AnomalyReport::default(),
+            &None,
+            &SessionIntel::default(),
+            &ModelRouting::default(),
+            &[],
+        );
+
+        assert_eq!(recommendations.len(), 1);
+        assert_eq!(
+            recommendation_titles(&recommendations),
+            vec!["No dominant inefficiency showed up"]
+        );
+    }
 }

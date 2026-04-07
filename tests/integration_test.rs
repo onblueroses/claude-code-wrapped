@@ -132,6 +132,11 @@ fn story_builder_pipeline_matches_expected_sections() {
     assert_eq!(entries.len(), 3);
     let daily = aggregate_daily(&entries);
     let session_breakdown = read_session_breakdown(&projects_dir, Some(2026));
+    assert_eq!(session_breakdown.sessions[0].subagents.len(), 1);
+    assert_eq!(
+        session_breakdown.sessions[0].subagents[0].session_id,
+        "sub-1"
+    );
     let project_breakdown = aggregate_by_project(&entries);
     let cost_analysis = analyze_usage(2026, &daily, &session_breakdown);
     let cache_health = analyze_cache_health(&daily);

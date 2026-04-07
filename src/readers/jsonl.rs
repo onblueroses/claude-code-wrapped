@@ -18,6 +18,11 @@ struct FileContext {
 }
 
 pub fn read_all_jsonl(projects_dir: &Path, year: Option<i32>) -> Vec<AssistantEntry> {
+    // First pass of the reader pipeline: flatten assistant-only JSONL records into
+    // `AssistantEntry` values for cost, cache, anomaly, and routing analysis.
+    // This intentionally does not preserve parent/child session structure; the
+    // second pass in `read_session_breakdown` rebuilds that tree for story and
+    // session-intelligence consumers that need `SessionSummary`/`SubagentSummary`.
     let mut entries = Vec::new();
     let mut seen_message_ids = HashSet::new();
     let mut skipped_files = 0usize;

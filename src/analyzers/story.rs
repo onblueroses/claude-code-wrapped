@@ -16,6 +16,8 @@ struct StoryMetrics {
     top_tool: Option<TopTool>,
     top_project: Option<TopProject>,
     biggest_session: Option<crate::SessionSummary>,
+    biggest_session_by_cost: Option<crate::SessionSummary>,
+    biggest_session_by_tokens: Option<crate::SessionSummary>,
     biggest_subagent: Option<crate::SubagentSummary>,
     prompt_ratio: PromptRatio,
     next_move: Option<crate::Recommendation>,
@@ -70,6 +72,8 @@ pub fn build_wrapped_story(report: &Report, entries: &[AssistantEntry]) -> Wrapp
         top_tool: metrics.top_tool,
         top_project: metrics.top_project,
         biggest_session: metrics.biggest_session,
+        biggest_session_by_cost: metrics.biggest_session_by_cost,
+        biggest_session_by_tokens: metrics.biggest_session_by_tokens,
         biggest_subagent: metrics.biggest_subagent,
         prompt_ratio: metrics.prompt_ratio,
         next_move: metrics.next_move,
@@ -78,6 +82,13 @@ pub fn build_wrapped_story(report: &Report, entries: &[AssistantEntry]) -> Wrapp
 }
 
 fn collect_story_metrics(report: &Report, entries: &[AssistantEntry]) -> StoryMetrics {
+    let biggest_session_by_cost = report.session_breakdown.sessions.first().cloned();
+    let biggest_session_by_tokens = {
+        let mut sessions = report.session_breakdown.sessions.clone();
+        sessions.sort_by(|left, right| right.total_tokens.cmp(&left.total_tokens));
+        sessions.first().cloned()
+    };
+
     let active_days = report
         .cost_analysis
         .daily_costs
@@ -112,7 +123,9 @@ fn collect_story_metrics(report: &Report, entries: &[AssistantEntry]) -> StoryMe
         power_hour: crate::busiest_hour(entries),
         top_tool: top_tool(entries),
         top_project: top_project(&report.project_breakdown),
-        biggest_session: report.session_breakdown.sessions.first().cloned(),
+        biggest_session: biggest_session_by_cost.clone(),
+        biggest_session_by_cost,
+        biggest_session_by_tokens,
         biggest_subagent: report.session_breakdown.costly_subagents.first().cloned(),
         prompt_ratio: prompt_ratio(&report.session_breakdown),
         next_move: report.recommendations.first().cloned(),

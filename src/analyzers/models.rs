@@ -283,7 +283,7 @@ pub fn analyze_model_routing(
     let opus_cost = tier_costs["opus"];
     let routable_to_sonnet = opus_cost * 0.4;
     let sonnet_equivalent_cost = routable_to_sonnet * 0.6;
-    let estimated_savings = (routable_to_sonnet - sonnet_equivalent_cost).round() as u64;
+    let estimated_savings = routable_to_sonnet - sonnet_equivalent_cost;
 
     ModelRouting {
         available: true,
@@ -343,5 +343,71 @@ fn cost_trend(daily_costs: &[crate::DailyCost]) -> String {
         "dropping".to_string()
     } else {
         "stable".to_string()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::analyze_model_routing;
+    use crate::{AssistantEntry, CostAnalysis};
+    use std::collections::BTreeMap;
+
+    fn cost_analysis(model_costs: BTreeMap<String, f64>) -> CostAnalysis {
+        CostAnalysis {
+            model_costs,
+            ..CostAnalysis::default()
+        }
+    }
+
+    fn entry(session_id: &str, is_subagent: bool) -> AssistantEntry {
+        AssistantEntry {
+            session_id: session_id.to_string(),
+            project_hash: "project".to_string(),
+            is_subagent,
+            cwd: None,
+            timestamp: "2026-01-01T12:00:00.000Z".to_string(),
+            model: "claude-opus-4-1".to_string(),
+            input_tokens: 0,
+            output_tokens: 0,
+            cache_creation_tokens: 0,
+            cache_read_tokens: 0,
+            cost_usd: 0.0,
+            tool_names: Vec::new(),
+        }
+    }
+
+    #[test]
+    fn analyze_model_routing_calculates_tier_percentages() {
+        let routing = analyze_model_routing(
+            &cost_analysis(BTreeMap::from([
+                ("Claude Opus".to_string(), 80.0),
+                ("Claude Sonnet".to_string(), 20.0),
+                ("Claude Haiku".to_string(), 0.0),
+            ])),
+            &[entry("session-1", false)],
+        );
+
+        assert!(routing.available);
+        assert_eq!(routing.opus_pct, 80);
+        assert_eq!(routing.sonnet_pct, 20);
+        assert_eq!(routing.haiku_pct, 0);
+    }
+
+    #[test]
+    fn analyze_model_routing_keeps_fractional_estimated_savings() {
+        let routing = analyze_model_routing(
+            &cost_analysis(BTreeMap::from([
+                ("Claude Opus".to_string(), 4.0),
+                ("Claude Sonnet".to_string(), 1.0),
+            ])),
+            &[
+                entry("session-1", false),
+                entry("session-2", true),
+                entry("session-3", false),
+            ],
+        );
+
+        assert!((routing.estimated_savings - 0.64).abs() < f64::EPSILON);
+        assert_eq!(routing.subagent_pct, 33);
     }
 }

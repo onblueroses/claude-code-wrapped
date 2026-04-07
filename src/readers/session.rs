@@ -11,6 +11,11 @@ use std::fs;
 use std::path::Path;
 
 pub fn read_session_breakdown(projects_dir: &Path, year: Option<i32>) -> SessionBreakdown {
+    // Second pass of the reader pipeline: rebuild full session trees from the raw
+    // JSONL files so wrapped-story and session-intelligence views can reason about
+    // prompts, durations, and nested `SubagentSummary` children. The flat
+    // `read_all_jsonl` pass remains necessary because cost/cache analyzers consume
+    // aggregated `AssistantEntry` records rather than hierarchical sessions.
     let mut sessions = Vec::new();
 
     for path in discover_session_files(projects_dir) {

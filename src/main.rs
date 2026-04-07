@@ -122,7 +122,7 @@ fn exit_with_message(
         std::process::exit(1);
     }
     println!("{human_message}");
-    Ok(())
+    std::process::exit(1);
 }
 
 fn build_report(

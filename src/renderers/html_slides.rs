@@ -1,5 +1,6 @@
 use crate::{
-    escape_html, format_currency, format_ratio, format_tokens, trim_text, with_grouping, Report,
+    escape_html, format_currency, format_ratio, format_tokens, ranked_projects, trim_text,
+    with_grouping, Report, SessionSummary,
 };
 
 pub fn slide_opening(report: &Report) -> String {
@@ -342,15 +343,14 @@ fn model_rows(report: &Report) -> String {
 }
 
 fn project_rows(report: &Report) -> String {
-    let max_project_tokens = report
-        .project_breakdown
+    let projects = ranked_projects(&report.project_breakdown);
+    let max_project_tokens = projects
         .first()
         .map(|project| project.output_tokens)
         .unwrap_or(1);
 
-    report
-        .project_breakdown
-        .iter()
+    projects
+        .into_iter()
         .take(8)
         .map(|project| {
             let bar_pct = if max_project_tokens > 0 {
@@ -531,37 +531,75 @@ fn inflection_html(report: &Report) -> String {
 }
 
 fn biggest_session_content(report: &Report) -> String {
-    report
-        .wrapped_story
-        .biggest_session
-        .as_ref()
-        .map(|session| {
-            let date = session
-                .timestamp_start
-                .as_deref()
-                .map(|value| &value[..value.len().min(10)])
-                .unwrap_or("—");
-            let preview = trim_text(session.first_prompt.as_deref().unwrap_or(""), 120);
-            let preview_html = if preview.is_empty() {
-                String::new()
-            } else {
-                format!(
-                    r#"<p style="font-size:clamp(13px,1.8vw,16px);color:#000;opacity:0.5;margin-top:20px;max-width:540px;line-height:1.65">{}</p>"#,
-                    escape_html(&preview)
-                )
-            };
-            format!(
-                r#"<div class="slide-label" style="color:rgba(0,0,0,0.45)">Biggest session</div>
-      <div class="slide-hero" style="color:#000">{tokens}</div>
-      <p class="slide-sub" style="color:#000;opacity:0.55">{project} · {date}</p>
-      {preview_html}"#,
-                tokens = escape_html(&format_tokens(session.total_tokens)),
-                project = escape_html(&session.project_name),
-                date = escape_html(date),
-                preview_html = preview_html,
-            )
-        })
-        .unwrap_or_else(|| {
+    let by_cost = report.wrapped_story.biggest_session_by_cost.as_ref();
+    let by_tokens = report.wrapped_story.biggest_session_by_tokens.as_ref();
+
+    match (by_cost, by_tokens) {
+        (Some(cost), Some(tokens)) if cost.session_id == tokens.session_id => format!(
+            r#"<div class="slide-label" style="color:rgba(0,0,0,0.45)">Biggest session</div>
+      <div class="card-grid">{card}</div>"#,
+            card = biggest_session_card(cost, "by cost + tokens", true, true),
+        ),
+        (Some(cost), Some(tokens)) => format!(
+            r#"<div class="slide-label" style="color:rgba(0,0,0,0.45)">Biggest session</div>
+      <div class="card-grid">{cost_card}{token_card}</div>"#,
+            cost_card = biggest_session_card(cost, "by cost", true, false),
+            token_card = biggest_session_card(tokens, "by tokens", false, true),
+        ),
+        (Some(cost), None) => format!(
+            r#"<div class="slide-label" style="color:rgba(0,0,0,0.45)">Biggest session</div>
+      <div class="card-grid">{card}</div>"#,
+            card = biggest_session_card(cost, "by cost", true, true),
+        ),
+        (None, Some(tokens)) => format!(
+            r#"<div class="slide-label" style="color:rgba(0,0,0,0.45)">Biggest session</div>
+      <div class="card-grid">{card}</div>"#,
+            card = biggest_session_card(tokens, "by tokens", true, true),
+        ),
+        (None, None) => {
             r#"<div class="slide-label" style="color:rgba(0,0,0,0.45)">Biggest session</div><p class="slide-sub" style="color:#000">No session data</p>"#.to_string()
-        })
+        }
+    }
+}
+
+fn biggest_session_card(
+    session: &SessionSummary,
+    label: &str,
+    show_cost: bool,
+    show_tokens: bool,
+) -> String {
+    let date = session
+        .timestamp_start
+        .as_deref()
+        .map(|value| &value[..value.len().min(10)])
+        .unwrap_or("—");
+    let preview = trim_text(session.first_prompt.as_deref().unwrap_or(""), 120);
+
+    let mut metrics = Vec::new();
+    if show_cost {
+        metrics.push(format!(
+            "Cost {cost}",
+            cost = format_currency(session.cost_usd)
+        ));
+    }
+    if show_tokens {
+        metrics.push(format!(
+            "Tokens {tokens}",
+            tokens = format_tokens(session.total_tokens)
+        ));
+    }
+
+    format!(
+        r#"<article class="card">
+        <div class="eyebrow">{label}</div>
+        <h3>{project}</h3>
+        <p>{date} · {metrics}</p>
+        <p>{preview}</p>
+      </article>"#,
+        label = escape_html(label),
+        project = escape_html(&session.project_name),
+        date = escape_html(date),
+        metrics = escape_html(&metrics.join(" · ")),
+        preview = escape_html(&preview),
+    )
 }

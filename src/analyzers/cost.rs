@@ -231,3 +231,37 @@ fn median(mut values: Vec<f64>) -> f64 {
         (values[mid - 1] + values[mid]) / 2.0
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::approximate_cost;
+    use crate::TokenUsage;
+
+    fn tokens() -> TokenUsage {
+        TokenUsage {
+            input_tokens: 1_000_000,
+            output_tokens: 1_000_000,
+            cache_creation_tokens: 1_000_000,
+            cache_read_tokens: 1_000_000,
+        }
+    }
+
+    #[test]
+    fn approximate_cost_prices_opus_above_haiku_for_the_same_usage() {
+        let usage = tokens();
+
+        assert!(
+            approximate_cost("claude-opus-4-1", &usage)
+                > approximate_cost("claude-haiku-3-5", &usage)
+        );
+    }
+
+    #[test]
+    fn approximate_cost_uses_opus_pricing_for_unknown_models() {
+        let usage = tokens();
+        let unknown = approximate_cost("mystery-model", &usage);
+        let opus = approximate_cost("claude-opus-4-1", &usage);
+
+        assert!((unknown - opus).abs() < f64::EPSILON);
+    }
+}

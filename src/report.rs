@@ -1,6 +1,8 @@
 use serde::Serialize;
 use std::collections::BTreeMap;
 
+// ── Wire Types ───────────────────────────────────────────────────────────────
+
 /// Aggregated token counts across Claude Code activity.
 #[derive(Debug, Clone, Serialize, Default)]
 #[serde(rename_all = "camelCase")]
@@ -76,6 +78,8 @@ impl AssistantEntry {
     }
 }
 
+// ── Activity ─────────────────────────────────────────────────────────────────
+
 #[derive(Debug, Clone, Serialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct DailyAggregate {
@@ -107,6 +111,8 @@ pub struct ProjectSummary {
     pub first_seen: Option<String>,
     pub last_seen: Option<String>,
 }
+
+// ── Sessions ─────────────────────────────────────────────────────────────────
 
 #[derive(Debug, Clone, Serialize, Default)]
 #[serde(rename_all = "camelCase")]
@@ -160,6 +166,8 @@ pub struct SessionBreakdown {
     pub total_subagent_sessions: usize,
     pub total_subagent_tokens: u64,
 }
+
+// ── Cost Analysis ────────────────────────────────────────────────────────────
 
 #[derive(Debug, Clone, Serialize, Default)]
 #[serde(rename_all = "camelCase")]
@@ -218,6 +226,8 @@ pub struct CostAnalysis {
     pub totals: TokenUsage,
 }
 
+// ── Cache Health ─────────────────────────────────────────────────────────────
+
 #[derive(Debug, Clone, Serialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct CacheReason {
@@ -264,6 +274,8 @@ pub struct CacheHealth {
     pub totals: TokenUsage,
 }
 
+// ── Anomalies ────────────────────────────────────────────────────────────────
+
 #[derive(Debug, Clone, Serialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct Anomaly {
@@ -293,6 +305,8 @@ pub struct AnomalyReport {
     pub stats: AnomalyStats,
     pub trend: String,
 }
+
+// ── Session Intel ────────────────────────────────────────────────────────────
 
 #[derive(Debug, Clone, Serialize, Default)]
 #[serde(rename_all = "camelCase")]
@@ -331,6 +345,8 @@ pub struct SessionIntel {
     pub hour_distribution: Vec<usize>,
 }
 
+// ── Model Routing ────────────────────────────────────────────────────────────
+
 #[derive(Debug, Clone, Serialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct ModelRouting {
@@ -338,13 +354,15 @@ pub struct ModelRouting {
     pub opus_pct: u64,
     pub sonnet_pct: u64,
     pub haiku_pct: u64,
-    pub estimated_savings: u64,
+    pub estimated_savings: f64,
     pub subagent_pct: u64,
     pub diversity_score: u64,
     pub tier_costs: BTreeMap<String, f64>,
     pub total_cost: f64,
     pub busiest_hour: Option<TimeBucket>,
 }
+
+// ── Inflection ───────────────────────────────────────────────────────────────
 
 #[derive(Debug, Clone, Serialize, Default)]
 #[serde(rename_all = "camelCase")]
@@ -360,6 +378,8 @@ pub struct InflectionPoint {
     pub secondary: Option<Box<InflectionPoint>>,
 }
 
+// ── Recommendations ──────────────────────────────────────────────────────────
+
 #[derive(Debug, Clone, Serialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct Recommendation {
@@ -368,6 +388,8 @@ pub struct Recommendation {
     pub savings: String,
     pub action: String,
 }
+
+// ── Story / Narrative ────────────────────────────────────────────────────────
 
 #[derive(Debug, Clone, Serialize, Default)]
 #[serde(rename_all = "camelCase")]
@@ -451,11 +473,15 @@ pub struct WrappedStory {
     pub top_tool: Option<TopTool>,
     pub top_project: Option<TopProject>,
     pub biggest_session: Option<SessionSummary>,
+    pub biggest_session_by_cost: Option<SessionSummary>,
+    pub biggest_session_by_tokens: Option<SessionSummary>,
     pub biggest_subagent: Option<SubagentSummary>,
     pub prompt_ratio: PromptRatio,
     pub next_move: Option<Recommendation>,
     pub share_text: String,
 }
+
+// ── Report ───────────────────────────────────────────────────────────────────
 
 /// Full Claude Code wrapped output and all derived analyses.
 #[derive(Debug, Clone, Serialize, Default)]

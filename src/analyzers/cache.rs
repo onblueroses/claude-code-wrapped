@@ -81,6 +81,9 @@ pub fn detect_inflection_points(daily_from_jsonl: &[DailyAggregate]) -> Option<I
     for index in 3..=active_days.len().saturating_sub(3) {
         let before = &active_days[index.saturating_sub(7)..index];
         let after = &active_days[index..active_days.len().min(index + 7)];
+        if before.len() < 4 || after.len() < 4 {
+            continue;
+        }
         let before_ratio = compute_ratio(before);
         let after_ratio = compute_ratio(after);
 
@@ -305,9 +308,93 @@ fn model_weighted_savings(daily: &[DailyAggregate]) -> (f64, f64) {
                 (5.0, 0.50, 6.25)
             };
             savings += model_data.cache_read_tokens as f64 / 1_000_000.0 * (input - cache_read);
+            // Write premium: delta between cache-write rate and cache-read rate. This
+            // is the marginal cost of cache misses (having to write instead of read),
+            // not literal invalidation waste.
             overhead +=
                 model_data.cache_creation_tokens as f64 / 1_000_000.0 * (cache_write - cache_read);
         }
     }
     (savings, overhead)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{analyze_cache_health, detect_inflection_points};
+    use crate::DailyAggregate;
+    use std::collections::BTreeMap;
+
+    fn day(
+        date: &str,
+        input_tokens: u64,
+        output_tokens: u64,
+        cache_creation_tokens: u64,
+        cache_read_tokens: u64,
+    ) -> DailyAggregate {
+        DailyAggregate {
+            date: date.to_string(),
+            total_cost: 0.0,
+            input_tokens,
+            output_tokens,
+            cache_creation_tokens,
+            cache_read_tokens,
+            message_count: 1,
+            session_count: 1,
+            cache_output_ratio: crate::round_ratio(cache_read_tokens, output_tokens),
+            models: BTreeMap::new(),
+        }
+    }
+
+    #[test]
+    fn analyze_cache_health_aggregates_totals_and_assigns_a_grade_for_high_hit_rate() {
+        let daily = vec![
+            day("2026-01-01", 50, 40, 0, 450),
+            day("2026-01-02", 50, 60, 0, 450),
+        ];
+
+        let health = analyze_cache_health(&daily);
+
+        assert_eq!(health.totals.input_tokens, 100);
+        assert_eq!(health.totals.output_tokens, 100);
+        assert_eq!(health.totals.cache_read_tokens, 900);
+        assert_eq!(health.cache_hit_rate, 90.0);
+        assert_eq!(health.efficiency_ratio, 9);
+        assert_eq!(health.grade.letter, "A");
+    }
+
+    #[test]
+    fn analyze_cache_health_assigns_a_low_grade_for_poor_hit_rate() {
+        let health = analyze_cache_health(&[day("2026-01-01", 800, 100, 0, 200)]);
+
+        assert_eq!(health.cache_hit_rate, 20.0);
+        assert_eq!(health.grade.letter, "D");
+    }
+
+    #[test]
+    fn detect_inflection_points_requires_at_least_six_active_days() {
+        let daily = (1..=5)
+            .map(|day_index| day(&format!("2026-01-0{day_index}"), 10, 10, 0, 10))
+            .collect::<Vec<_>>();
+
+        assert!(detect_inflection_points(&daily).is_none());
+    }
+
+    #[test]
+    fn detect_inflection_points_enforces_a_minimum_four_day_window() {
+        let mut daily = Vec::new();
+        for day_index in 1..=4 {
+            daily.push(day(&format!("2026-01-0{day_index}"), 10, 10, 0, 10));
+        }
+        for day_index in 5..=8 {
+            daily.push(day(&format!("2026-01-0{day_index}"), 10, 10, 0, 30));
+        }
+
+        let inflection = detect_inflection_points(&daily).unwrap();
+
+        assert_eq!(inflection.date, "2026-01-05");
+        assert_eq!(inflection.direction, "worsened");
+        assert_eq!(inflection.before_days, 4);
+        assert_eq!(inflection.after_days, 4);
+        assert!((inflection.multiplier - 3.0).abs() < f64::EPSILON);
+    }
 }

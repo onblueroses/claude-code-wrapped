@@ -1,4 +1,4 @@
-use chrono::{DateTime, Datelike, FixedOffset, NaiveDate, Timelike};
+use chrono::{DateTime, Datelike, FixedOffset, Local, NaiveDate, Timelike};
 use serde::Serialize;
 use std::collections::BTreeMap;
 use std::path::PathBuf;
@@ -149,6 +149,7 @@ pub struct SessionSummary {
     pub usage: TokenUsage,
     pub model_totals: BTreeMap<String, TokenUsage>,
     pub total_tokens: u64,
+    pub cost_usd: f64,
     pub prompt_count: usize,
     pub tool_message_count: usize,
     pub first_prompt: Option<String>,
@@ -498,7 +499,8 @@ pub fn timestamp_date_key(timestamp: &str) -> Option<String> {
 }
 
 pub fn timestamp_hour(timestamp: &str) -> Option<u8> {
-    parse_timestamp(timestamp).map(|dt| dt.hour() as u8)
+    // Convert to local time so power-hour reflects the user's actual working day.
+    parse_timestamp(timestamp).map(|dt| dt.with_timezone(&Local).hour() as u8)
 }
 
 pub fn weekday_from_date(date: &str) -> Option<String> {

@@ -69,9 +69,9 @@ The `--card` flag writes a 1080x1920 HTML file: CSS animations, no JavaScript, n
 
 **Prompt ratio** — how many messages came from you vs. tool callbacks. A low human percentage usually means long agentic runs.
 
-**Archetypes** — one of six patterns (Precision Maximalist, Delegation Director, Flow-State Builder, Balanced Operator, Burst-mode Operator, Measured Tempo) derived from your model mix and message cadence.
+**Archetypes** — one of four patterns (Precision Maximalist, Delegation Director, Flow-State Builder, Balanced Operator) derived from your model mix and message cadence. A separate momentum card (Burst-mode Operator or Measured Tempo) captures your day-to-day pacing.
 
-**Recommendations** — 3–5 concrete suggestions based on what the data actually shows: cache patterns, model routing, session structure.
+**Recommendations** — data-driven suggestions based on what the data actually shows: cache patterns, model routing, session structure.
 
 ## How it works
 

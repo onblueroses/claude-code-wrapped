@@ -34,9 +34,8 @@ pub fn analyze_cache_health(daily_from_jsonl: &[DailyAggregate]) -> CacheHealth 
         cache_hit_rate,
         estimated_breaks,
     );
-    // Approximate these cache savings using Sonnet pricing so they are not inflated for non-Opus users.
-    let savings_from_cache = totals.cache_read_tokens as f64 / 1_000_000.0 * (3.0 - 0.30);
-    let wasted_from_breaks = totals.cache_creation_tokens as f64 / 1_000_000.0 * (3.75 - 0.30);
+    // Compute savings using the actual per-model token mix rather than a flat Sonnet rate.
+    let (savings_from_cache, wasted_from_breaks) = model_weighted_savings(daily_from_jsonl);
 
     CacheHealth {
         total_cache_breaks: estimated_breaks,
@@ -286,4 +285,29 @@ fn round_ratio(numerator: u64, denominator: u64) -> u64 {
     } else {
         (numerator as f64 / denominator as f64).round() as u64
     }
+}
+
+/// Returns `(savings_from_caching, overhead_from_breaks)` in dollars,
+/// weighted by the actual model mix rather than a flat Sonnet rate.
+fn model_weighted_savings(daily: &[DailyAggregate]) -> (f64, f64) {
+    let mut savings = 0.0f64;
+    let mut overhead = 0.0f64;
+    for day in daily {
+        for (model_name, model_data) in &day.models {
+            let lower = model_name.to_lowercase();
+            // (input_price, cache_read_price, cache_write_price) per million tokens
+            let (input, cache_read, cache_write) = if lower.contains("haiku") {
+                (1.0, 0.10, 1.25)
+            } else if lower.contains("sonnet") {
+                (3.0, 0.30, 3.75)
+            } else {
+                // Opus or unknown — default to Opus pricing
+                (5.0, 0.50, 6.25)
+            };
+            savings += model_data.cache_read_tokens as f64 / 1_000_000.0 * (input - cache_read);
+            overhead +=
+                model_data.cache_creation_tokens as f64 / 1_000_000.0 * (cache_write - cache_read);
+        }
+    }
+    (savings, overhead)
 }

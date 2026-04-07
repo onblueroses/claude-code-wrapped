@@ -64,7 +64,10 @@ pub fn analyze_usage(
         })
         .collect::<Vec<_>>();
 
-    let active_days = daily_costs.iter().filter(|day| day.cost > 0.01).count();
+    let active_days = daily_costs
+        .iter()
+        .filter(|day| day.message_count > 0)
+        .count();
     let total_cost = daily_costs.iter().map(|day| day.cost).sum::<f64>();
     let avg_daily_cost = if active_days > 0 {
         total_cost / active_days as f64

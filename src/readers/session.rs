@@ -19,6 +19,8 @@ struct JsonlRecord {
     #[serde(default)]
     is_sidechain: bool,
     message: Option<JsonlMessage>,
+    #[serde(rename = "costUSD")]
+    cost_usd: Option<f64>,
     timestamp: Option<String>,
     session_id: Option<String>,
     cwd: Option<String>,
@@ -64,7 +66,7 @@ pub fn read_session_breakdown(projects_dir: &Path, year: Option<i32>) -> Session
         }
     }
 
-    sessions.sort_by(|left, right| right.usage.output_tokens.cmp(&left.usage.output_tokens));
+    sessions.sort_by(|left, right| right.cost_usd.total_cmp(&left.cost_usd));
 
     let mut costly_subagents = sessions
         .iter()
@@ -90,12 +92,15 @@ fn parse_session_file(
     let raw = fs::read_to_string(file_path).ok()?;
     let mut totals = TokenUsage::default();
     let mut model_totals: BTreeMap<String, TokenUsage> = BTreeMap::new();
+    let mut total_cost_usd = 0.0f64;
     let mut prompts = Vec::new();
     let mut seen_message_ids = HashSet::new();
     let mut tool_message_count = 0usize;
     let mut session_id = file_path.file_stem()?.to_string_lossy().to_string();
-    let mut timestamp_start: Option<String> = None;
-    let mut timestamp_end: Option<String> = None;
+    let mut timestamp_start: Option<i64> = None;
+    let mut timestamp_start_str: Option<String> = None;
+    let mut timestamp_end: Option<i64> = None;
+    let mut timestamp_end_str: Option<String> = None;
     let mut cwd: Option<String> = None;
 
     for line in raw.lines().filter(|line| !line.trim().is_empty()) {
@@ -113,19 +118,17 @@ fn parse_session_file(
             }
         }
 
-        if timestamp_start
-            .as_ref()
-            .map(|value| timestamp < *value)
-            .unwrap_or(true)
-        {
-            timestamp_start = Some(timestamp.clone());
-        }
-        if timestamp_end
-            .as_ref()
-            .map(|value| timestamp > *value)
-            .unwrap_or(true)
-        {
-            timestamp_end = Some(timestamp.clone());
+        // Parse epoch for correct cross-timezone ordering.
+        let epoch = parse_timestamp(&timestamp).map(|dt| dt.timestamp());
+        if let Some(ep) = epoch {
+            if timestamp_start.is_none_or(|s| ep < s) {
+                timestamp_start = Some(ep);
+                timestamp_start_str = Some(timestamp.clone());
+            }
+            if timestamp_end.is_none_or(|e| ep > e) {
+                timestamp_end = Some(ep);
+                timestamp_end_str = Some(timestamp.clone());
+            }
         }
         if cwd.is_none() {
             cwd = record.cwd.clone();
@@ -145,6 +148,8 @@ fn parse_session_file(
                         continue;
                     }
                 }
+
+                total_cost_usd += record.cost_usd.unwrap_or(0.0);
 
                 let Some(usage) = message.usage else {
                     continue;
@@ -187,7 +192,8 @@ fn parse_session_file(
         .as_deref()
         .map(derive_project_name)
         .unwrap_or_else(|| "Unknown".to_string());
-    let duration_minutes = duration_minutes(timestamp_start.as_deref(), timestamp_end.as_deref());
+    let duration_minutes =
+        duration_minutes(timestamp_start_str.as_deref(), timestamp_end_str.as_deref());
     let total_tokens = totals.total_tokens();
 
     let mut subagents = Vec::new();
@@ -226,9 +232,10 @@ fn parse_session_file(
         project_hash: project_hash.to_string(),
         project_path,
         project_name,
-        timestamp_start,
-        timestamp_end,
+        timestamp_start: timestamp_start_str,
+        timestamp_end: timestamp_end_str,
         duration_minutes,
+        cost_usd: total_cost_usd,
         usage: totals,
         model_totals,
         total_tokens,

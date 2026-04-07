@@ -28,15 +28,9 @@ pub fn render_html(report: &Report) -> String {
         .iter()
         .take(8)
         .map(|project| {
-            let path = project
-                .path
-                .as_ref()
-                .map(|path| format!(r#"<div class="project-path mono">{}</div>"#, escape_html(path)))
-                .unwrap_or_default();
             format!(
-                r#"<div class="list-row"><div><strong>{}</strong>{}</div><div class="muted mono">{} output</div><div class="muted mono">{} session{}</div></div>"#,
+                r#"<div class="list-row"><div><strong>{}</strong></div><div class="muted mono">{} output</div><div class="muted mono">{} session{}</div></div>"#,
                 escape_html(&project.name),
-                path,
                 escape_html(&format_tokens(project.output_tokens)),
                 project.session_count,
                 if project.session_count == 1 { "" } else { "s" }
@@ -55,7 +49,7 @@ pub fn render_html(report: &Report) -> String {
             .take(6)
             .map(|session| {
                 format!(
-                    r#"<article class="card list-card"><div class="row-top"><div><div class="eyebrow">{}</div><strong>{}</strong></div><span class="pill mono">{}</span></div><div class="muted">{}</div></article>"#,
+                    r#"<article class="card list-card"><div class="row-top"><div><div class="eyebrow">{}</div><strong>{}</strong></div><span class="pill mono">{}</span></div></article>"#,
                     escape_html(&session.project_name),
                     escape_html(
                         &session
@@ -65,10 +59,6 @@ pub fn render_html(report: &Report) -> String {
                             .unwrap_or_else(|| "Unknown".to_string())
                     ),
                     escape_html(&format_tokens(session.total_tokens)),
-                    escape_html(&trim_text(
-                        session.first_prompt.as_deref().unwrap_or("No prompt preview available."),
-                        140
-                    ))
                 )
             })
             .collect::<Vec<_>>()

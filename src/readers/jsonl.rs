@@ -127,7 +127,12 @@ pub fn read_all_jsonl(projects_dir: &Path, year: Option<i32>) -> Vec<AssistantEn
         }
     }
 
-    entries.sort_by(|left, right| left.timestamp.cmp(&right.timestamp));
+    // Sort by parsed epoch so mixed UTC/offset timestamps order correctly.
+    entries.sort_by_key(|e| {
+        crate::parse_timestamp(&e.timestamp)
+            .map(|dt| dt.timestamp())
+            .unwrap_or(0)
+    });
     if skipped_files > 0 || skipped_lines > 0 {
         eprintln!(
             "warning: skipped {} unreadable file(s), {} malformed line(s) — report may be incomplete",
@@ -254,16 +259,19 @@ pub fn aggregate_by_project(entries: &[AssistantEntry]) -> Vec<ProjectSummary> {
             project.top_level_sessions.insert(entry.session_id.clone());
         }
 
+        let entry_epoch = crate::parse_timestamp(&entry.timestamp).map(|dt| dt.timestamp());
         match (&project.first_seen, &project.last_seen) {
             (None, None) => {
                 project.first_seen = Some(entry.timestamp.clone());
                 project.last_seen = Some(entry.timestamp.clone());
             }
             (Some(first), Some(last)) => {
-                if entry.timestamp < *first {
+                let first_epoch = crate::parse_timestamp(first).map(|dt| dt.timestamp());
+                let last_epoch = crate::parse_timestamp(last).map(|dt| dt.timestamp());
+                if entry_epoch < first_epoch {
                     project.first_seen = Some(entry.timestamp.clone());
                 }
-                if entry.timestamp > *last {
+                if entry_epoch > last_epoch {
                     project.last_seen = Some(entry.timestamp.clone());
                 }
             }
@@ -328,26 +336,34 @@ pub fn decode_project_hash(hash: &str) -> (Option<String>, String) {
         return (None, "Unknown".to_string());
     }
 
-    let path = if hash.starts_with('-') {
-        format!(
-            "/{}",
-            hash.split('-')
-                .filter(|segment| !segment.is_empty())
-                .collect::<Vec<_>>()
-                .join("/")
-        )
+    // Claude encodes path separators as single hyphens; a literal hyphen in a
+    // directory name becomes a double hyphen. A leading hyphen signals an absolute path.
+    let path = if let Some(rest) = hash.strip_prefix('-') {
+        format!("/{}", decode_hash_segments(rest))
     } else {
-        let chars = hash.chars().collect::<Vec<_>>();
+        let chars: Vec<char> = hash.chars().collect();
         if chars.len() >= 3 && chars[0].is_ascii_alphabetic() && chars[1] == '-' && chars[2] == '-'
         {
-            format!("{}:/{}", chars[0], hash[3..].replace('-', "/"))
+            // Windows-style drive letter prefix (e.g. "c--Users-...")
+            format!("{}:/{}", chars[0], decode_hash_segments(&hash[3..]))
         } else {
-            hash.replace('-', "/")
+            decode_hash_segments(hash)
         }
     };
 
     let name = derive_project_name(&path);
     (Some(path), name)
+}
+
+fn decode_hash_segments(s: &str) -> String {
+    // Replace "--" with a placeholder so single "-" can be used as the path separator,
+    // then restore the placeholder as a literal hyphen.
+    const PLACEHOLDER: &str = "\x00";
+    s.replace("--", PLACEHOLDER)
+        .split('-')
+        .map(|seg| seg.replace(PLACEHOLDER, "-"))
+        .collect::<Vec<_>>()
+        .join("/")
 }
 
 pub fn resolve_project_path(

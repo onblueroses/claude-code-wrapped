@@ -9,7 +9,7 @@ pub fn build_wrapped_story(report: &Report, entries: &[AssistantEntry]) -> Wrapp
     let daily_costs = &report.cost_analysis.daily_costs;
     let active_days = daily_costs
         .iter()
-        .filter(|day| day.cost > 0.01)
+        .filter(|day| day.message_count > 0)
         .collect::<Vec<_>>();
     let total_messages = daily_costs
         .iter()

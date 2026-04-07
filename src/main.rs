@@ -57,7 +57,11 @@ fn run() -> Result<(), Box<dyn Error>> {
 
     let Some(home) = home_dir() else {
         if cli.json {
-            return Ok(());
+            println!(
+                "{}",
+                serde_json::json!({"error": "home directory could not be resolved", "year": selected_year})
+            );
+            std::process::exit(1);
         }
         println!("Claude Code home directory could not be resolved.");
         return Ok(());
@@ -66,7 +70,11 @@ fn run() -> Result<(), Box<dyn Error>> {
     let projects_dir = home.join(".claude").join("projects");
     if !projects_dir.exists() {
         if cli.json {
-            return Ok(());
+            println!(
+                "{}",
+                serde_json::json!({"error": "~/.claude/projects not found", "year": selected_year})
+            );
+            std::process::exit(1);
         }
         println!(
             "Claude Code data directory not found at {}.\nExpected JSONL files under ~/.claude/projects/. Nothing to analyze.",
@@ -79,7 +87,11 @@ fn run() -> Result<(), Box<dyn Error>> {
     let session_breakdown = read_session_breakdown(&projects_dir, Some(selected_year));
     if entries.is_empty() {
         if cli.json {
-            return Ok(());
+            println!(
+                "{}",
+                serde_json::json!({"error": "no records found", "year": selected_year})
+            );
+            std::process::exit(1);
         }
         println!(
             "No Claude Code assistant usage records were found for {} in {}.",
@@ -188,18 +200,20 @@ fn run() -> Result<(), Box<dyn Error>> {
 
 fn write_archive(archive_dir: &Path, report: &Report) -> Result<usize, Box<dyn Error>> {
     fs::create_dir_all(archive_dir)?;
-    let mut by_project: BTreeMap<String, Vec<ccwrapped::SessionPrompt>> = BTreeMap::new();
+    // Key by project_hash (stable identity) to avoid merging unrelated repos that
+    // share the same leaf directory name.
+    let mut by_project: BTreeMap<String, (String, Vec<ccwrapped::SessionPrompt>)> = BTreeMap::new();
     let mut slug_counts: HashMap<String, usize> = HashMap::new();
 
     for session in &report.session_breakdown.sessions {
-        by_project
-            .entry(session.project_name.clone())
-            .or_default()
-            .extend(session.prompts.clone());
+        let entry = by_project
+            .entry(session.project_hash.clone())
+            .or_insert_with(|| (session.project_name.clone(), Vec::new()));
+        entry.1.extend(session.prompts.clone());
     }
 
     let mut written = 0usize;
-    for (project_name, prompts) in by_project {
+    for (_hash, (project_name, prompts)) in by_project {
         if prompts.is_empty() {
             continue;
         }

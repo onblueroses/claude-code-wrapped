@@ -109,7 +109,7 @@ pub fn generate_recommendations(
         }
     }
 
-    {
+    if project_breakdown.len() > 1 {
         let pool = crate::ranked_projects(project_breakdown);
         let total_output = pool.iter().map(|p| p.output_tokens).sum::<u64>();
         if let Some(top) = pool.first() {

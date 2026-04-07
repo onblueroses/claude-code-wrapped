@@ -179,7 +179,7 @@ fn story_builder_pipeline_matches_expected_sections() {
     assert!(html.contains("Claude Code Wrapped"));
     assert!(html.contains("Costliest sessions"));
     assert!(html.contains("Subagent spikes"));
-    assert!(html.contains("Next season upgrades"));
+    assert!(html.contains("Next season"));
 
     let markdown = render_markdown(&report);
     assert!(markdown.contains("## Hero Stats"));

@@ -5,7 +5,7 @@ pub fn render_share_card(report: &Report) -> String {
     let stats = [
         (
             "Season spend".to_string(),
-            crate::format_currency_compact(report.cost_analysis.total_cost),
+            crate::format_currency(report.cost_analysis.total_cost),
         ),
         (
             "Messages sent".to_string(),

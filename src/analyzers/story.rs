@@ -1,7 +1,7 @@
 use crate::{
-    format_currency_compact, format_hour, format_ratio, format_tokens, trim_text,
-    weekday_from_date, AssistantEntry, CacheMood, HeroStat, Highlight, NamedCount, PromptRatio,
-    Report, StoryCard, TimeBucket, TopProject, TopTool, WrappedStory,
+    format_currency, format_ratio, format_tokens, trim_text, weekday_from_date, AssistantEntry,
+    CacheMood, HeroStat, Highlight, NamedCount, PromptRatio, Report, StoryCard, TopProject,
+    TopTool, WrappedStory,
 };
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -29,10 +29,10 @@ pub fn build_wrapped_story(report: &Report, entries: &[AssistantEntry]) -> Wrapp
             .collect::<Vec<_>>(),
     );
     let favorite_weekday = favorite_weekday(&active_days);
-    let power_hour = power_hour(entries);
+    let power_hour = crate::busiest_hour(entries);
     let top_tool = top_tool(entries);
     let top_project = top_project(&report.project_breakdown);
-    let biggest_session = report.session_breakdown.costly_sessions.first().cloned();
+    let biggest_session = report.session_breakdown.sessions.first().cloned();
     let biggest_subagent = report.session_breakdown.costly_subagents.first().cloned();
     let prompt_ratio = prompt_ratio(&report.session_breakdown);
     let next_move = report.recommendations.first().cloned();
@@ -46,7 +46,7 @@ pub fn build_wrapped_story(report: &Report, entries: &[AssistantEntry]) -> Wrapp
     let hero = vec![
         HeroStat {
             label: "Equivalent spend".to_string(),
-            value: format_currency_compact(report.cost_analysis.total_cost),
+            value: format_currency(report.cost_analysis.total_cost),
             note: format!(
                 "{} active day{}",
                 active_days.len(),
@@ -139,7 +139,7 @@ pub fn build_wrapped_story(report: &Report, entries: &[AssistantEntry]) -> Wrapp
     } else if let Some(peak_day) = &report.cost_analysis.peak_day {
         Highlight {
             eyebrow: "Peak day".to_string(),
-            title: format_currency_compact(peak_day.cost),
+            title: format_currency(peak_day.cost),
             note: format!("{} was your loudest day.", peak_day.date),
         }
     } else {
@@ -308,27 +308,8 @@ fn momentum(longest_streak: u64, average_messages_per_active_day: u64) -> StoryC
 }
 
 fn top_project(project_breakdown: &[crate::ProjectSummary]) -> Option<TopProject> {
-    if project_breakdown.is_empty() {
-        return None;
-    }
-
-    let mut sorted = project_breakdown.to_vec();
-    sorted.sort_by(|left, right| right.output_tokens.cmp(&left.output_tokens));
-    let pool = if sorted
-        .iter()
-        .any(|project| !project.name.is_empty() && project.name != "workspace root")
-    {
-        sorted
-            .into_iter()
-            .filter(|project| !project.name.is_empty() && project.name != "workspace root")
-            .collect::<Vec<_>>()
-    } else {
-        sorted
-    };
-    let total_output = pool
-        .iter()
-        .map(|project| project.output_tokens)
-        .sum::<u64>();
+    let pool = crate::ranked_projects(project_breakdown);
+    let total_output = pool.iter().map(|p| p.output_tokens).sum::<u64>();
     let top = pool.first()?;
     let share_pct = if total_output > 0 {
         ((top.output_tokens as f64 / total_output as f64) * 100.0).round() as u64
@@ -341,29 +322,6 @@ fn top_project(project_breakdown: &[crate::ProjectSummary]) -> Option<TopProject
         share_pct,
         session_count: top.session_count,
         output_tokens: top.output_tokens,
-    })
-}
-
-fn power_hour(entries: &[AssistantEntry]) -> Option<TimeBucket> {
-    let mut counts = [0usize; 24];
-    for entry in entries {
-        if let Some(hour) = crate::timestamp_hour(&entry.timestamp) {
-            counts[hour as usize] += 1;
-        }
-    }
-    let total = counts.iter().sum::<usize>();
-    let (hour, count) = counts
-        .iter()
-        .enumerate()
-        .max_by(|left, right| left.1.cmp(right.1))?;
-    if *count == 0 || total == 0 {
-        return None;
-    }
-    Some(TimeBucket {
-        hour: hour as u8,
-        label: format_hour(hour as u8),
-        count: *count,
-        share_pct: ((*count as f64 / total as f64) * 100.0).round() as u64,
     })
 }
 

@@ -109,25 +109,9 @@ pub fn generate_recommendations(
         }
     }
 
-    if project_breakdown.len() > 1 {
-        let mut sorted = project_breakdown.to_vec();
-        sorted.sort_by(|left, right| right.output_tokens.cmp(&left.output_tokens));
-        let pool = if sorted
-            .iter()
-            .any(|project| !project.name.is_empty() && project.name != "workspace root")
-        {
-            sorted
-                .iter()
-                .filter(|project| !project.name.is_empty() && project.name != "workspace root")
-                .cloned()
-                .collect::<Vec<_>>()
-        } else {
-            sorted.clone()
-        };
-        let total_output = pool
-            .iter()
-            .map(|project| project.output_tokens)
-            .sum::<u64>();
+    {
+        let pool = crate::ranked_projects(project_breakdown);
+        let total_output = pool.iter().map(|p| p.output_tokens).sum::<u64>();
         if let Some(top) = pool.first() {
             if total_output > 0 {
                 let share =

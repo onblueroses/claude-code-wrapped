@@ -1,27 +1,20 @@
-use crate::{escape_html, format_currency_compact, format_ratio, format_tokens, trim_text, Report};
+use crate::{
+    escape_html, format_currency, format_ratio, format_tokens, trim_text, with_grouping, Report,
+};
 
 pub fn render_html(report: &Report) -> String {
     let wrapped = &report.wrapped_story;
     let grade = &report.cache_health.grade;
 
-    // Total cost formatted for the big splash display
+    // Total cost formatted for the big splash display (keep cents for values >= $1000)
     let total_cost_display = {
         let cost = report.cost_analysis.total_cost;
-        if cost < 1000.0 {
-            format!("${:.2}", cost)
-        } else {
+        if cost >= 1000.0 {
             let whole = cost as u64;
             let frac = ((cost - whole as f64) * 100.0).round() as u64;
-            let s = whole.to_string();
-            let mut with_commas = String::new();
-            for (i, c) in s.chars().rev().enumerate() {
-                if i > 0 && i % 3 == 0 {
-                    with_commas.push(',');
-                }
-                with_commas.push(c);
-            }
-            let reversed: String = with_commas.chars().rev().collect();
-            format!("${}.{:02}", reversed, frac)
+            format!("${}.{:02}", with_grouping(whole), frac)
+        } else {
+            format!("${:.2}", cost)
         }
     };
 
@@ -54,7 +47,7 @@ pub fn render_html(report: &Report) -> String {
                     0
                 };
                 let label = day.date.get(5..).unwrap_or(&day.date);
-                let cost_str = format_currency_compact(day.cost);
+                let cost_str = format_currency(day.cost);
                 format!(
                     r#"<div class="spark-col" title="{} · {}"><div class="spark-bar" style="height:{}%"></div><span class="spark-label">{}</span></div>"#,
                     escape_html(&day.date),
@@ -81,7 +74,7 @@ pub fn render_html(report: &Report) -> String {
             format!(
                 r#"<div class="model-row"><div class="model-row-top"><strong>{}</strong><span>{} · {:.0}%</span></div><div class="bar-track"><div class="bar-fill" style="width:{:.1}%"></div></div></div>"#,
                 escape_html(model),
-                escape_html(&format_currency_compact(*cost)),
+                escape_html(&format_currency(*cost)),
                 share,
                 share,
             )
@@ -117,12 +110,12 @@ pub fn render_html(report: &Report) -> String {
         .join("");
 
     // Costliest sessions
-    let costliest_sessions = if report.session_breakdown.costly_sessions.is_empty() {
+    let costliest_sessions = if report.session_breakdown.sessions.is_empty() {
         r#"<p style="opacity:0.35;font-size:13px">No session data available.</p>"#.to_string()
     } else {
         report
             .session_breakdown
-            .costly_sessions
+            .sessions
             .iter()
             .take(6)
             .map(|s| {

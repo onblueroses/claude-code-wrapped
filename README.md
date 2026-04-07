@@ -50,7 +50,7 @@ That's it. It finds your Claude Code history automatically at `~/.claude/project
 ccwrapped [YEAR]               # default: current year
 ccwrapped --markdown           # also write claude-code-wrapped.md
 ccwrapped --card               # write + open a shareable animated HTML card
-ccwrapped --archive            # write per-project prompt files to ./wrapped-archive/
+ccwrapped --archive            # write per-project prompt files to ./wrapped-archive/ (contains prompt excerpts — don't share)
 ccwrapped --no-open            # skip auto-opening browser
 ccwrapped --json               # print raw JSON to stdout, no files written
 ```

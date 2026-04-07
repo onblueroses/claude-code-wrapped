@@ -74,7 +74,6 @@ pub fn read_session_breakdown(projects_dir: &Path, year: Option<i32>) -> Session
     costly_subagents.sort_by(|left, right| right.total_tokens.cmp(&left.total_tokens));
 
     SessionBreakdown {
-        costly_sessions: sessions.iter().take(20).cloned().collect(),
         costly_subagents: costly_subagents.iter().take(20).cloned().collect(),
         total_subagent_sessions: costly_subagents.len(),
         total_subagent_tokens: costly_subagents.iter().map(|item| item.total_tokens).sum(),

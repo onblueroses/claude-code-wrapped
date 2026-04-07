@@ -206,22 +206,6 @@ pub fn aggregate_daily(entries: &[AssistantEntry]) -> Vec<DailyAggregate> {
         .collect()
 }
 
-pub fn aggregate_by_model(entries: &[AssistantEntry]) -> BTreeMap<String, ModelAggregate> {
-    let mut by_model: BTreeMap<String, ModelAggregate> = BTreeMap::new();
-
-    for entry in entries {
-        let model = by_model.entry(entry.model.clone()).or_default();
-        model.input_tokens += entry.input_tokens;
-        model.output_tokens += entry.output_tokens;
-        model.cache_creation_tokens += entry.cache_creation_tokens;
-        model.cache_read_tokens += entry.cache_read_tokens;
-        model.cost += resolved_entry_cost(entry);
-        model.message_count += 1;
-    }
-
-    by_model
-}
-
 pub fn aggregate_by_project(entries: &[AssistantEntry]) -> Vec<ProjectSummary> {
     #[derive(Default)]
     struct Accumulator {

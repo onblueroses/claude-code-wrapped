@@ -38,7 +38,6 @@ pub fn analyze_cache_health(daily_from_jsonl: &[DailyAggregate]) -> CacheHealth 
     let (savings_from_cache, wasted_from_breaks) = model_weighted_savings(daily_from_jsonl);
 
     CacheHealth {
-        total_cache_breaks: estimated_breaks,
         estimated_breaks,
         reasons_ranked: vec![CacheReason {
             reason: "Unknown / Server-side".to_string(),

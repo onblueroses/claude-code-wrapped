@@ -12,11 +12,6 @@ struct Pricing {
     cache_read: f64,
 }
 
-#[derive(Clone, Copy)]
-struct CostParts {
-    total: f64,
-}
-
 const DEFAULT_PRICING: Pricing = Pricing {
     input: 5.0,
     output: 25.0,
@@ -38,10 +33,10 @@ pub fn analyze_usage(
 
             for (model_name, model_usage) in &day.models {
                 let cost = calculate_cost(model_name, &model_usage.as_usage(), model_usage.cost);
-                day_cost += cost.total;
+                day_cost += cost;
                 model_breakdowns.push(ModelCostBreakdown {
                     model: model_name.clone(),
-                    cost: cost.total,
+                    cost,
                     tokens: CostTokens {
                         input: model_usage.input_tokens,
                         output: model_usage.output_tokens,
@@ -180,16 +175,11 @@ pub fn clean_model_name(name: &str) -> String {
     }
 }
 
-fn calculate_cost(model_name: &str, tokens: &TokenUsage, recorded_cost_usd: f64) -> CostParts {
+fn calculate_cost(model_name: &str, tokens: &TokenUsage, recorded_cost_usd: f64) -> f64 {
     if recorded_cost_usd > 0.0 {
-        return CostParts {
-            total: recorded_cost_usd,
-        };
+        return recorded_cost_usd;
     }
-
-    CostParts {
-        total: approximate_cost(model_name, tokens),
-    }
+    approximate_cost(model_name, tokens)
 }
 
 pub(crate) fn approximate_cost(model_name: &str, tokens: &TokenUsage) -> f64 {

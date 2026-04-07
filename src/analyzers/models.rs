@@ -223,7 +223,7 @@ pub fn analyze_model_routing(
     entries: &[AssistantEntry],
 ) -> ModelRouting {
     let total_cost = cost_analysis.model_costs.values().sum::<f64>();
-    let busiest_hour = busiest_hour(entries);
+    let busiest_hour = crate::busiest_hour(entries);
     if total_cost < 0.01 {
         return ModelRouting {
             available: false,
@@ -293,29 +293,6 @@ pub fn analyze_model_routing(
         total_cost,
         busiest_hour,
     }
-}
-
-fn busiest_hour(entries: &[AssistantEntry]) -> Option<TimeBucket> {
-    let mut counts = [0usize; 24];
-    for entry in entries {
-        if let Some(hour) = crate::timestamp_hour(&entry.timestamp) {
-            counts[hour as usize] += 1;
-        }
-    }
-    let total = counts.iter().sum::<usize>();
-    let (hour, count) = counts
-        .iter()
-        .enumerate()
-        .max_by(|left, right| left.1.cmp(right.1))?;
-    if *count == 0 || total == 0 {
-        return None;
-    }
-    Some(TimeBucket {
-        hour: hour as u8,
-        label: format_hour(hour as u8),
-        count: *count,
-        share_pct: ((*count as f64 / total as f64) * 100.0).round() as u64,
-    })
 }
 
 fn percentile(sorted: &[u64], pct: f64) -> u64 {

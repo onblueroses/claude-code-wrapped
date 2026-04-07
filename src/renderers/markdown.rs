@@ -1,4 +1,4 @@
-use crate::{format_currency_compact, format_ratio, format_tokens, Report};
+use crate::{format_currency, format_ratio, format_tokens, Report};
 
 fn escape_md_cell(s: &str) -> String {
     s.replace('|', "\\|").replace('\n', " ")
@@ -31,7 +31,7 @@ pub fn render_markdown(report: &Report) -> String {
     lines.push(String::new());
     lines.push(format!(
         "- **Total spend:** {}",
-        format_currency_compact(report.cost_analysis.total_cost)
+        format_currency(report.cost_analysis.total_cost)
     ));
     lines.push(format!(
         "- **Active days:** {}",
@@ -116,12 +116,12 @@ pub fn render_markdown(report: &Report) -> String {
         lines.push(String::new());
     }
 
-    if !report.session_breakdown.costly_sessions.is_empty() {
+    if !report.session_breakdown.sessions.is_empty() {
         lines.push("## Costliest Sessions".to_string());
         lines.push(String::new());
         lines.push("| Project | Tokens | Date |".to_string());
         lines.push("|---------|--------|------|".to_string());
-        for session in report.session_breakdown.costly_sessions.iter().take(5) {
+        for session in report.session_breakdown.sessions.iter().take(5) {
             let date = session
                 .timestamp_start
                 .as_deref()

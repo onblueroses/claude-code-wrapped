@@ -198,15 +198,15 @@ fn calculate_grade(
     };
 
     let (letter, color, label) = if composite >= 80 {
-        ("A", "#10b981", "Excellent")
+        ("A", "#7ec49a", "Excellent")
     } else if composite >= 65 {
-        ("B", "#22d3ee", "Good")
+        ("B", "#d4c5b0", "Good")
     } else if composite >= 50 {
-        ("C", "#f59e0b", "Fair")
+        ("C", "#c4a96e", "Fair")
     } else if composite >= 35 {
-        ("D", "#f97316", "Poor")
+        ("D", "#b08060", "Poor")
     } else {
-        ("F", "#ef4444", "Critical")
+        ("F", "#a07060", "Critical")
     };
 
     // ratio_score kept for JSON output / debugging; not used in grade calculation.

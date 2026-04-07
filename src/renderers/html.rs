@@ -160,7 +160,7 @@ pub fn render_html(report: &Report) -> String {
         .iter()
         .map(|h| {
             format!(
-                r#"<article class="highlight-card"><div class="eyebrow accent-sky">{}</div><h3>{}</h3><p class="muted">{}</p></article>"#,
+                r#"<article class="highlight-card"><div class="eyebrow accent-terra">{}</div><h3>{}</h3><p class="muted">{}</p></article>"#,
                 escape_html(&h.eyebrow),
                 escape_html(&h.title),
                 escape_html(&h.note),
@@ -238,7 +238,7 @@ pub fn render_html(report: &Report) -> String {
         .as_ref()
         .map(|t| {
             format!(
-                r#"<div class="bento-big accent-gold">{}</div><div class="bento-label">top tool</div><div class="muted">{} calls this season</div>"#,
+                r#"<div class="bento-big accent-amber">{}</div><div class="bento-label">top tool</div><div class="muted">{} calls this season</div>"#,
                 escape_html(&t.name),
                 t.count,
             )
@@ -278,19 +278,18 @@ pub fn render_html(report: &Report) -> String {
   <style>
     :root {{
       color-scheme: dark;
-      --bg: #060c15;
-      --surface: #0d1724;
-      --surface-2: #121f30;
-      --surface-3: #19283c;
+      --bg: #0f0e0d;
+      --surface: #191817;
+      --surface-2: #201f1d;
+      --surface-3: #272523;
       --border: rgba(255,255,255,0.07);
-      --border-bright: rgba(255,255,255,0.13);
-      --text: #eef2f7;
-      --muted: #6b87a0;
-      --sky: #5bc8f5;
-      --mint: #3dd8a0;
-      --gold: #f0c060;
-      --rose: #f87171;
-      --violet: #a78bfa;
+      --border-bright: rgba(255,255,255,0.10);
+      --text: #f5f2ee;
+      --muted: #b2a89e;
+      --heading: #d4c5b0;
+      --stone: #d4c5b0;
+      --sage: #7ec49a;
+      --neg: #a07060;
       --radius: 14px;
       --radius-lg: 20px;
     }}
@@ -298,9 +297,7 @@ pub fn render_html(report: &Report) -> String {
     body {{
       font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
       background-color: var(--bg);
-      background-image:
-        radial-gradient(ellipse 90% 40% at 50% -5%, rgba(91,200,245,0.09) 0%, transparent 60%),
-        radial-gradient(ellipse 50% 30% at 95% 5%, rgba(167,139,250,0.06) 0%, transparent 50%);
+      background-image: none;
       color: var(--text);
       min-height: 100vh;
       padding: 28px 20px 80px;
@@ -310,19 +307,18 @@ pub fn render_html(report: &Report) -> String {
     .page {{ max-width: 1140px; margin: 0 auto; display: flex; flex-direction: column; gap: 10px; }}
 
     /* ── Typography ── */
-    h2 {{ font-size: 16px; font-weight: 600; letter-spacing: -0.02em; }}
-    h3 {{ font-size: 14px; font-weight: 600; letter-spacing: -0.01em; }}
+    h2 {{ font-size: 16px; font-weight: 600; letter-spacing: -0.02em; color: var(--heading); }}
+    h3 {{ font-size: 14px; font-weight: 600; letter-spacing: -0.01em; color: var(--text); }}
     p {{ font-size: 13px; }}
     .eyebrow {{ font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); font-weight: 600; }}
     .muted {{ color: var(--muted); font-size: 13px; line-height: 1.6; }}
     .mono {{ font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }}
 
     /* ── Accent colors ── */
-    .accent-sky   {{ color: var(--sky); }}
-    .accent-mint  {{ color: var(--mint); }}
-    .accent-gold  {{ color: var(--gold); }}
-    .accent-rose  {{ color: var(--rose); }}
-    .accent-violet {{ color: var(--violet); }}
+    .accent-terra  {{ color: var(--stone); }}
+    .accent-moss   {{ color: var(--sage); }}
+    .accent-amber  {{ color: var(--stone); }}
+    .accent-rose   {{ color: var(--neg); }}
 
     /* ── Base panel ── */
     .panel {{
@@ -346,9 +342,7 @@ pub fn render_html(report: &Report) -> String {
       content: "";
       position: absolute;
       inset: 0;
-      background:
-        radial-gradient(ellipse 60% 70% at -5% 50%, rgba(91,200,245,0.07) 0%, transparent 60%),
-        radial-gradient(ellipse 40% 50% at 105% 20%, rgba(167,139,250,0.05) 0%, transparent 50%);
+      background: none;
       pointer-events: none;
     }}
     .hero-top {{
@@ -426,7 +420,7 @@ pub fn render_html(report: &Report) -> String {
       font-size: 10px;
       letter-spacing: 0.14em;
       text-transform: uppercase;
-      color: var(--muted);
+      color: var(--heading);
       font-weight: 600;
     }}
 
@@ -450,7 +444,7 @@ pub fn render_html(report: &Report) -> String {
     .spark-bar {{
       width: 100%;
       border-radius: 3px 3px 0 0;
-      background: linear-gradient(180deg, var(--sky) 0%, rgba(91,200,245,0.35) 100%);
+      background: linear-gradient(180deg, var(--stone) 0%, rgba(212,197,176,0.2) 100%);
       min-height: 3px;
     }}
     .spark-label {{ font-size: 9px; color: var(--muted); letter-spacing: 0.02em; }}
@@ -477,7 +471,7 @@ pub fn render_html(report: &Report) -> String {
     .bar-fill {{
       height: 100%;
       border-radius: inherit;
-      background: linear-gradient(90deg, var(--sky), var(--mint));
+      background: linear-gradient(90deg, var(--stone), var(--sage));
     }}
     .model-pct {{ font-size: 11px; color: var(--muted); text-align: right; font-family: ui-monospace, monospace; }}
 
@@ -493,7 +487,7 @@ pub fn render_html(report: &Report) -> String {
     .proj-row:last-child {{ border-bottom: none; }}
     .proj-info strong {{ font-size: 12px; display: block; margin-bottom: 5px; }}
     .proj-bar-wrap {{ height: 3px; background: var(--surface-3); border-radius: 2px; overflow: hidden; }}
-    .proj-bar {{ height: 100%; border-radius: inherit; background: var(--mint); }}
+    .proj-bar {{ height: 100%; border-radius: inherit; background: var(--sage); }}
     .proj-sessions, .proj-tokens {{ font-size: 11px; text-align: right; }}
 
     /* ── Session rows ── */
@@ -511,9 +505,9 @@ pub fn render_html(report: &Report) -> String {
     .session-prompt {{ font-size: 11px; margin-top: 2px; max-width: 300px; }}
     .session-preview {{ font-size: 11px; margin-top: 6px; padding: 8px 10px; background: var(--surface-3); border-radius: 6px; line-height: 1.5; }}
     .token-badge {{
-      background: rgba(91,200,245,0.08);
-      color: var(--sky);
-      border: 1px solid rgba(91,200,245,0.18);
+      background: rgba(212,197,176,0.07);
+      color: var(--stone);
+      border: 1px solid rgba(212,197,176,0.16);
       border-radius: 7px;
       padding: 4px 9px;
       font-size: 11px;
@@ -553,7 +547,7 @@ pub fn render_html(report: &Report) -> String {
       margin: 6px 0 8px;
       display: flex;
     }}
-    .ratio-human {{ height: 100%; background: var(--sky); border-radius: inherit; }}
+    .ratio-human {{ height: 100%; background: var(--stone); border-radius: inherit; }}
     .ratio-labels {{
       display: flex;
       justify-content: space-between;
@@ -572,8 +566,8 @@ pub fn render_html(report: &Report) -> String {
       font-size: 12px;
     }}
     .savings-row:last-child {{ border-bottom: none; }}
-    .savings-pos {{ color: var(--mint); font-weight: 700; font-family: ui-monospace, monospace; }}
-    .savings-neg {{ color: var(--rose); font-weight: 700; font-family: ui-monospace, monospace; }}
+    .savings-pos {{ color: var(--sage); font-weight: 700; font-family: ui-monospace, monospace; }}
+    .savings-neg {{ color: var(--neg); font-weight: 700; font-family: ui-monospace, monospace; }}
 
     /* ── Inflection note ── */
     .inflection-note {{
@@ -584,14 +578,14 @@ pub fn render_html(report: &Report) -> String {
       line-height: 1.5;
     }}
     .inflection-note.warn {{
-      background: rgba(248,113,113,0.07);
-      color: var(--rose);
-      border: 1px solid rgba(248,113,113,0.15);
+      background: rgba(160,112,96,0.08);
+      color: var(--neg);
+      border: 1px solid rgba(160,112,96,0.18);
     }}
     .inflection-note.good {{
-      background: rgba(61,216,160,0.07);
-      color: var(--mint);
-      border: 1px solid rgba(61,216,160,0.15);
+      background: rgba(107,158,122,0.08);
+      color: var(--sage);
+      border: 1px solid rgba(107,158,122,0.18);
     }}
 
     /* ── Divider ── */
@@ -632,12 +626,12 @@ pub fn render_html(report: &Report) -> String {
     <div class="grid-3">
       <div class="bento-card">
         <div class="bento-label">Power hour</div>
-        <div class="bento-big accent-sky">{power_hour_label}</div>
+        <div class="bento-big accent-terra">{power_hour_label}</div>
         <div class="muted">{power_hour_note}</div>
       </div>
       <div class="bento-card">
         <div class="bento-label">Main project</div>
-        <div class="bento-big accent-mint">{top_project_name}</div>
+        <div class="bento-big accent-moss">{top_project_name}</div>
         <div class="muted">{top_project_meta}</div>
       </div>
       <div class="bento-card">

@@ -1,0 +1,11 @@
+target/
+*.log
+.DS_Store
+Thumbs.db
+.env
+claude-code-wrapped.html
+claude-code-wrapped.md
+claude-code-wrapped-card.html
+wrapped-archive/
+wrapped-preview.png
+/.git-old

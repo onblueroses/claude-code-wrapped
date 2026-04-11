@@ -10,7 +10,7 @@ use ccwrapped::readers::session::read_session_breakdown;
 use ccwrapped::renderers::html::render_html;
 use ccwrapped::renderers::markdown::render_markdown;
 use ccwrapped::renderers::share_card::render_share_card;
-use ccwrapped::renderers::terminal::render_terminal;
+use ccwrapped::renderers::terminal::{color_choice, render_terminal_with};
 use ccwrapped::{home_dir, project_slug, Report};
 use chrono::{Datelike, Utc};
 use clap::Parser;
@@ -41,6 +41,8 @@ struct Cli {
     open: bool,
     #[arg(long, help = "print JSON to stdout only, no files written")]
     json: bool,
+    #[arg(long, help = "disable colors (also respects NO_COLOR env var)")]
+    plain: bool,
     #[arg(value_name = "YEAR")]
     year: Option<i32>,
 }
@@ -102,10 +104,12 @@ fn run() -> Result<(), Box<dyn Error>> {
     }
 
     // Terminal output is always the primary experience
+    let choice = color_choice(cli.plain);
     print_summary(
         built_report.entry_count,
         selected_year,
         &built_report.report,
+        choice,
     );
 
     // File outputs are opt-in
@@ -225,7 +229,12 @@ fn write_outputs(cwd: &Path, report: &Report, cli: &Cli) -> Result<Vec<PathBuf>,
     Ok(outputs)
 }
 
-fn print_summary(entry_count: usize, selected_year: i32, report: &Report) {
+fn print_summary(
+    entry_count: usize,
+    selected_year: i32,
+    report: &Report,
+    choice: termcolor::ColorChoice,
+) {
     println!(
         "  {} entries, {} days, {} sessions ({})",
         entry_count,
@@ -233,7 +242,7 @@ fn print_summary(entry_count: usize, selected_year: i32, report: &Report) {
         report.session_breakdown.sessions.len(),
         selected_year,
     );
-    render_terminal(report);
+    render_terminal_with(report, choice);
 }
 
 fn write_archive(archive_dir: &Path, report: &Report) -> Result<usize, Box<dyn Error>> {

@@ -4,8 +4,20 @@ pub mod widgets;
 use crate::Report;
 use termcolor::{ColorChoice, StandardStream, WriteColor};
 
+pub fn color_choice(plain: bool) -> ColorChoice {
+    if plain || std::env::var_os("NO_COLOR").is_some() {
+        ColorChoice::Never
+    } else {
+        ColorChoice::Auto
+    }
+}
+
 pub fn render_terminal(report: &Report) {
-    let mut stdout = StandardStream::stdout(ColorChoice::Auto);
+    render_terminal_with(report, ColorChoice::Auto);
+}
+
+pub fn render_terminal_with(report: &Report, choice: ColorChoice) {
+    let mut stdout = StandardStream::stdout(choice);
     render_terminal_to(report, &mut stdout);
 }
 

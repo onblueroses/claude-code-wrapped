@@ -52,9 +52,10 @@ ccwrapped --all                # write all formats (html + card + markdown)
 ccwrapped --open               # open written files in browser
 ccwrapped --archive            # write per-project prompt files to ./wrapped-archive/ (contains prompt excerpts - don't share)
 ccwrapped --json               # print raw JSON to stdout, no other output
+ccwrapped --plain              # disable colors (also respects NO_COLOR env var)
 ```
 
-By default, `ccwrapped` prints a full report to your terminal and writes nothing to disk. Use `--html`, `--card`, or `--all` to export files.
+By default, `ccwrapped` prints a full report to your terminal and writes nothing to disk. Use `--html`, `--card`, or `--all` to export files. Use `--plain` when running in environments that don't render ANSI colors (e.g. piped output, Claude Code bash tool).
 
 The `--card` flag writes a 1080x1920 HTML file: CSS animations, no JavaScript, no project names or paths. It screenshots cleanly and shares without leaking anything about what you're working on.
 

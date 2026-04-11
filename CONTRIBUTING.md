@@ -8,7 +8,7 @@ cd claude-code-wrapped
 cargo build --release
 ```
 
-Requires Rust 1.82+. No other dependencies — the build is fully offline-capable via the vendored `glob` crate.
+Requires Rust 1.82+.
 
 ## Running tests
 

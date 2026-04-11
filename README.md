@@ -2,31 +2,28 @@
 
 Your Claude Code year in review. Same idea as Spotify Wrapped, except for your dev sessions with Claude.
 
-I built this because I couldn't answer basic questions about my own usage. How much have I spent? Is my caching actually doing anything? Am I reaching for Opus when Haiku would do just fine? The Claude dashboard has token counts and a cost total — that's it. I wanted something that reads the data and tells me what it means.
+I built this because I couldn't answer basic questions about my own usage. How much have I spent? Is my caching actually doing anything? Am I reaching for Opus when Haiku would do just fine? The Claude dashboard has token counts and a cost total - that's it. I wanted something that reads the data and tells me what it means.
 
-It reads `~/.claude/projects/**/*.jsonl` directly — nothing leaves your machine — and writes a terminal recap, an HTML report, a shareable card, and an optional per-project prompt archive.
+It reads `~/.claude/projects/**/*.jsonl` directly - nothing leaves your machine - and writes a terminal recap, an HTML report, a shareable card, and an optional per-project prompt archive.
 
-```
-$ ccwrapped 2026
+<p align="center">
+  <img src="assets/hero-slide.png" alt="Opening slide showing archetype and hero stats" width="720">
+</p>
 
-Claude Code Wrapped 2026
-Archetype: Precision Maximalist
-"You lean on Opus for most work, which means you're either doing deeply nuanced
-tasks or leaving efficiency gains on the table."
+<p align="center">
+  <img src="assets/spend-slide.png" alt="Season spend and power hour slides" width="360">
+  <img src="assets/cache-slide.png" alt="Cache grade and favorite tool slides" width="360">
+</p>
 
-Hero Stats
-  Total spend      $128.44
-  Active days      71
-  Longest streak   9 days
-  Top project      payments-api
-  Human prompts    73%
+<p align="center">
+  <img src="assets/data-slide.png" alt="Model mix, projects, sessions, and subagents" width="720">
+</p>
 
-Quick Read
-  Cache grade      B  (412:1 ratio)
-  Model mix        62% Sonnet / 31% Opus / 7% Haiku
-  Human vs tool    73% human (1,204 human / 441 tool)
-  Next move        Compact earlier before long idle gaps rebuild the cache
-```
+The `--card` flag generates a shareable story card (no project names, no paths):
+
+<p align="center">
+  <img src="assets/share-card.png" alt="Shareable card for social media" width="320">
+</p>
 
 | I want to... | Go to |
 |---|---|
@@ -91,7 +88,13 @@ The `--card` flag writes a 1080x1920 HTML file: CSS animations, no JavaScript, n
     output files
 ```
 
-The `vendor/glob` directory is a small vendored glob implementation. The original build had no crates.io access, so rather than pulling in the full crate and pretending otherwise, I left it in place. It handles recursive JSONL discovery. Swap it for the real `glob` crate if you want — one-line change in `Cargo.toml`.
+## Privacy
+
+Everything runs locally — no network calls, no telemetry.
+
+The `--card` output is designed for sharing: it contains only aggregate stats, no project names or file paths. The `--archive` output contains prompt excerpts — don't share it.
+
+The main HTML report includes project names and directory paths derived from your JSONL history. If you screenshot it, be aware those are visible. The terminal output and markdown output also include project names.
 
 ## Development
 

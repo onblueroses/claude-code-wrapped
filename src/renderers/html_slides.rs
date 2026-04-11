@@ -279,8 +279,9 @@ fn hero_stats_html(report: &Report) -> String {
 fn total_cost_display(report: &Report) -> String {
     let cost = report.cost_analysis.total_cost;
     if cost >= 1000.0 {
-        let whole = cost as u64;
-        let frac = ((cost - whole as f64) * 100.0).round() as u64;
+        let cents = (cost * 100.0).round() as u64;
+        let whole = cents / 100;
+        let frac = cents % 100;
         format!("${}.{:02}", with_grouping(whole), frac)
     } else {
         format!("${cost:.2}")
@@ -602,4 +603,44 @@ fn biggest_session_card(
         metrics = escape_html(&metrics.join(" · ")),
         preview = escape_html(&preview),
     )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::total_cost_display;
+    use crate::Report;
+
+    fn report_with_cost(cost: f64) -> Report {
+        Report {
+            cost_analysis: crate::CostAnalysis {
+                total_cost: cost,
+                ..Default::default()
+            },
+            ..Default::default()
+        }
+    }
+
+    #[test]
+    fn total_cost_display_never_shows_three_digit_cents() {
+        // The old implementation split whole/frac separately, so rounding the
+        // fractional part could produce "100" cents (e.g. "$1,000.100").
+        // The fix rounds to total cents first, then splits.
+        for cost in [1000.999, 1000.9999, 2500.998, 9999.9951] {
+            let display = total_cost_display(&report_with_cost(cost));
+            let dot = display.find('.').expect("should contain a dot");
+            let after_dot = &display[dot + 1..];
+            assert_eq!(
+                after_dot.len(),
+                2,
+                "cost {cost} produced {display} — expected exactly 2 decimal places"
+            );
+        }
+    }
+
+    #[test]
+    fn total_cost_display_normal_values() {
+        assert_eq!(total_cost_display(&report_with_cost(1234.56)), "$1,234.56");
+        assert_eq!(total_cost_display(&report_with_cost(999.99)), "$999.99");
+        assert_eq!(total_cost_display(&report_with_cost(5.50)), "$5.50");
+    }
 }

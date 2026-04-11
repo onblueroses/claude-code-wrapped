@@ -10,6 +10,7 @@ use ccwrapped::readers::session::read_session_breakdown;
 use ccwrapped::renderers::html::render_html;
 use ccwrapped::renderers::markdown::render_markdown;
 use ccwrapped::renderers::share_card::render_share_card;
+use ccwrapped::renderers::terminal::render_terminal_to;
 use ccwrapped::Report;
 use std::fs;
 use std::path::PathBuf;
@@ -213,6 +214,25 @@ fn story_builder_pipeline_matches_expected_sections() {
     assert!(card.contains("Power hour"));
     assert!(!card.contains("<script"));
     assert!(!card.contains("demo-app"));
+
+    // Terminal output covers all major sections
+    let mut buf = termcolor::Buffer::no_color();
+    render_terminal_to(&report, &mut buf);
+    let terminal = String::from_utf8_lossy(buf.as_slice()).to_string();
+    assert!(terminal.contains("CLAUDE CODE WRAPPED"));
+    assert!(terminal.contains("Season stats"));
+    assert!(terminal.contains("Activity"));
+    assert!(terminal.contains("Cache health"));
+    assert!(terminal.contains("Model mix"));
+    assert!(terminal.contains("Top projects"));
+    assert!(terminal.contains("Costliest sessions"));
+    assert!(terminal.contains("Human vs tool"));
+    assert!(terminal.contains("Highlights"));
+    assert!(terminal.contains("Recommendations"));
+    // Verify sparkline characters are present
+    assert!(terminal.chars().any(|c| "▁▂▃▄▅▆▇█".contains(c)));
+    // Verify percentage bar characters are present
+    assert!(terminal.contains('█'));
 }
 
 #[test]

@@ -27,17 +27,18 @@ use std::process::Command;
     about = "Generate a Claude Code wrapped report from local JSONL history."
 )]
 struct Cli {
-    #[arg(long, help = "writes claude-code-wrapped.md to current directory")]
+    #[arg(long, help = "write claude-code-wrapped.html")]
+    html: bool,
+    #[arg(long, help = "write claude-code-wrapped.md")]
     markdown: bool,
-    #[arg(
-        long,
-        help = "writes claude-code-wrapped-card.html and opens it in browser"
-    )]
+    #[arg(long, help = "write claude-code-wrapped-card.html")]
     card: bool,
-    #[arg(long, help = "writes per-project prompt files to ./wrapped-archive/")]
+    #[arg(long, help = "write per-project prompt files to ./wrapped-archive/")]
     archive: bool,
-    #[arg(long = "no-open", help = "skip auto-opening browser")]
-    no_open: bool,
+    #[arg(long, help = "write all output formats (html + card + markdown)")]
+    all: bool,
+    #[arg(long, help = "open output in browser after writing")]
+    open: bool,
     #[arg(long, help = "print JSON to stdout only, no files written")]
     json: bool,
     #[arg(value_name = "YEAR")]
@@ -100,14 +101,22 @@ fn run() -> Result<(), Box<dyn Error>> {
         return Ok(());
     }
 
-    let cwd = std::env::current_dir()?;
-    let outputs = write_outputs(&cwd, &built_report.report, &cli)?;
+    // Terminal output is always the primary experience
     print_summary(
         built_report.entry_count,
         selected_year,
         &built_report.report,
-        &outputs,
     );
+
+    // File outputs are opt-in
+    let wants_files = cli.html || cli.card || cli.markdown || cli.archive || cli.all;
+    if wants_files {
+        let cwd = std::env::current_dir()?;
+        let outputs = write_outputs(&cwd, &built_report.report, &cli)?;
+        for path in &outputs {
+            println!("  Wrote {}", path.display());
+        }
+    }
     Ok(())
 }
 
@@ -176,60 +185,55 @@ fn build_report(
 }
 
 fn write_outputs(cwd: &Path, report: &Report, cli: &Cli) -> Result<Vec<PathBuf>, Box<dyn Error>> {
-    let html_path = cwd.join("claude-code-wrapped.html");
-    fs::write(&html_path, render_html(report))?;
+    let mut outputs = Vec::new();
 
-    let mut outputs = vec![html_path.clone()];
-    if cli.markdown {
+    if cli.html || cli.all {
+        let html_path = cwd.join("claude-code-wrapped.html");
+        fs::write(&html_path, render_html(report))?;
+        if cli.open {
+            let _ = open_in_browser(&html_path);
+        }
+        outputs.push(html_path);
+    }
+
+    if cli.markdown || cli.all {
         let markdown_path = cwd.join("claude-code-wrapped.md");
         fs::write(&markdown_path, render_markdown(report))?;
         outputs.push(markdown_path);
     }
 
-    if cli.card {
+    if cli.card || cli.all {
         let card_path = cwd.join("claude-code-wrapped-card.html");
         fs::write(&card_path, render_share_card(report))?;
-        outputs.push(card_path.clone());
-        if !cli.no_open {
+        if cli.open {
             let _ = open_in_browser(&card_path);
         }
+        outputs.push(card_path);
     }
 
     if cli.archive {
         let archive_dir = cwd.join("wrapped-archive");
         let written = write_archive(&archive_dir, report)?;
         println!(
-            "  ✓ Prompt archive written to: {}/ ({} project{})",
+            "  Prompt archive: {}/ ({} project{})",
             archive_dir.display(),
             written,
             if written == 1 { "" } else { "s" }
         );
     }
 
-    if !cli.no_open && !cli.card {
-        let _ = open_in_browser(&html_path);
-    }
-
     Ok(outputs)
 }
 
-fn print_summary(entry_count: usize, selected_year: i32, report: &Report, outputs: &[PathBuf]) {
+fn print_summary(entry_count: usize, selected_year: i32, report: &Report) {
     println!(
-        "  ✓ {} assistant usage entries parsed for {}",
-        entry_count, selected_year
-    );
-    println!(
-        "  ✓ {} active day buckets found",
-        report.cost_analysis.daily_costs.len()
-    );
-    println!(
-        "  ✓ {} sessions summarized from JSONL",
-        report.session_breakdown.sessions.len()
+        "  {} entries, {} days, {} sessions ({})",
+        entry_count,
+        report.cost_analysis.daily_costs.len(),
+        report.session_breakdown.sessions.len(),
+        selected_year,
     );
     render_terminal(report);
-    for path in outputs {
-        println!("  ✓ Wrote {}", path.display());
-    }
 }
 
 fn write_archive(archive_dir: &Path, report: &Report) -> Result<usize, Box<dyn Error>> {

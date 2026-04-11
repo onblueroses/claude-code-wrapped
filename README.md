@@ -44,13 +44,17 @@ That's it. It finds your Claude Code history automatically at `~/.claude/project
 ## Flags
 
 ```bash
-ccwrapped [YEAR]               # default: current year
-ccwrapped --markdown           # also write claude-code-wrapped.md
-ccwrapped --card               # write + open a shareable animated HTML card
-ccwrapped --archive            # write per-project prompt files to ./wrapped-archive/ (contains prompt excerpts — don't share)
-ccwrapped --no-open            # skip auto-opening browser
-ccwrapped --json               # print raw JSON to stdout, no files written
+ccwrapped [YEAR]               # default: current year, terminal output only
+ccwrapped --html               # also write claude-code-wrapped.html
+ccwrapped --card               # write a shareable 1080x1920 HTML card
+ccwrapped --markdown           # write claude-code-wrapped.md
+ccwrapped --all                # write all formats (html + card + markdown)
+ccwrapped --open               # open written files in browser
+ccwrapped --archive            # write per-project prompt files to ./wrapped-archive/ (contains prompt excerpts - don't share)
+ccwrapped --json               # print raw JSON to stdout, no other output
 ```
+
+By default, `ccwrapped` prints a full report to your terminal and writes nothing to disk. Use `--html`, `--card`, or `--all` to export files.
 
 The `--card` flag writes a 1080x1920 HTML file: CSS animations, no JavaScript, no project names or paths. It screenshots cleanly and shares without leaking anything about what you're working on.
 

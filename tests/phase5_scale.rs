@@ -25,7 +25,13 @@ impl Scratch {
             .expect("clock follows epoch")
             .as_nanos();
         let id = NEXT_TEMP_ID.fetch_add(1, Ordering::Relaxed);
-        let path = std::env::temp_dir().join(format!(
+        #[cfg(windows)]
+        let base = std::env::var_os("USERPROFILE")
+            .map(PathBuf::from)
+            .expect("Windows store tests require USERPROFILE");
+        #[cfg(not(windows))]
+        let base = std::env::temp_dir();
+        let path = base.join(format!(
             "ccwrapped-phase5-{label}-{}-{nonce}-{id}",
             std::process::id()
         ));

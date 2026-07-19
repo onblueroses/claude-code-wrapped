@@ -8,3 +8,8 @@ updates:
       github-actions:
         patterns:
           - "*"
+    # This action's ref selects the Rust toolchain. The workflows intentionally
+    # use different immutable refs for the 1.85 MSRV and 1.95 capture jobs, but
+    # Dependabot collapses every occurrence to one ref and breaks either job.
+    ignore:
+      - dependency-name: dtolnay/rust-toolchain

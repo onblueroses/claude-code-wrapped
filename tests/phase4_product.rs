@@ -26,7 +26,13 @@ impl TestWorkspace {
             .expect("system clock must be after Unix epoch")
             .as_nanos();
         let sequence = TEMP_SEQUENCE.fetch_add(1, Ordering::Relaxed);
-        let root = std::env::temp_dir().join(format!(
+        #[cfg(windows)]
+        let base = std::env::var_os("USERPROFILE")
+            .map(PathBuf::from)
+            .expect("Windows product tests require USERPROFILE");
+        #[cfg(not(windows))]
+        let base = std::env::temp_dir();
+        let root = base.join(format!(
             "ccwrapped-phase4-{label}-{}-{nonce}-{sequence}",
             std::process::id()
         ));

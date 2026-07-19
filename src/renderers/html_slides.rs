@@ -1,38 +1,57 @@
 use crate::{
-    escape_html, format_currency, format_ratio, format_tokens, ranked_projects, trim_text,
-    with_grouping, Report, SessionSummary,
+    escape_html, format_currency, format_tokens, ranked_projects, trim_text, with_grouping, Report,
+    SessionSummary,
 };
 
 pub fn slide_opening(report: &Report) -> String {
+    let trust = crate::trust_projection(report, "standard")
+        .lines()
+        .into_iter()
+        .map(|line| format!("<div>{}</div>", escape_html(&line)))
+        .collect::<Vec<_>>()
+        .join("");
     format!(
         r#"  <!-- ── 1. OPENING / ARCHETYPE ── -->
-  <section class="slide s-black opening-slide">
+  <section id="opening" class="slide s-black opening-slide">
     <div class="slide-inner">
-      <span class="wordmark">Claude Code Wrapped · {year}</span>
+      <span class="wordmark">{experience} · {year}</span>
       <div class="archetype-title">{title}</div>
       <p class="hero-desc">{summary}</p>
+      <div class="trust-summary">{trust}</div>
       <div class="hero-stats">{hero_stats}</div>
     </div>
   </section>"#,
+        experience = escape_html(crate::experience_label(report)),
         year = report.year,
         title = escape_html(&report.wrapped_story.archetype.title),
         summary = escape_html(&report.wrapped_story.summary),
+        trust = trust,
         hero_stats = hero_stats_html(report),
     )
 }
 
 pub fn slide_spend(report: &Report) -> String {
+    let spend_note = format!(
+        "{} · coverage {} · registry {}",
+        report.canonical_metrics.cost.local_api_equivalent.method_id,
+        report
+            .canonical_metrics
+            .cost
+            .local_api_equivalent
+            .availability,
+        report.methodology.pricing_registry.version
+    );
     format!(
-        r#"  <!-- ── 2. SEASON SPEND ── -->
-  <section class="slide s-green stat-slide">
+        r#"  <!-- ── 2. API-EQUIVALENT ESTIMATE ── -->
+  <section id="api-equivalent" class="slide s-green stat-slide">
     <div class="slide-inner">
-      <div class="slide-label" style="color:rgba(0,0,0,0.45)">Season spend</div>
+      <div class="slide-label" style="color:rgba(0,0,0,0.45)">API-equivalent estimate</div>
       <div class="slide-hero" style="color:#000">{total_cost}</div>
-      <p class="slide-sub" style="color:#000;opacity:0.55">{active_days} active days</p>
+      <p class="slide-sub" style="color:#000;opacity:0.55">{spend_note}</p>
     </div>
   </section>"#,
         total_cost = escape_html(&total_cost_display(report)),
-        active_days = report.cost_analysis.active_days,
+        spend_note = escape_html(&spend_note),
     )
 }
 
@@ -69,37 +88,36 @@ pub fn slide_top_project(report: &Report) -> String {
 }
 
 pub fn slide_cache_grade(report: &Report) -> String {
-    let grade = &report.cache_health.grade;
+    let cache = &report.canonical_metrics.cache;
     format!(
-        r#"  <!-- ── 5. CACHE GRADE ── -->
-  <section class="slide s-dark stat-slide">
+        r#"  <!-- ── 5. CACHE EVIDENCE ── -->
+  <section id="cache-evidence" class="slide s-dark stat-slide">
     <div class="slide-inner">
-      <div class="slide-label">Cache health · {grade_label}</div>
-      <div class="cache-grade-hero" style="color:{grade_color}">{grade_letter}</div>
+      <div class="slide-label">Cache evidence · descriptive token shares</div>
+      <div class="cache-evidence-hero" style="color:#7cf2c8">{read_share}</div>
       <div class="cache-meta">
         <div>
-          <div class="cache-stat-val">{hit_rate:.1}%</div>
-          <div class="cache-stat-lbl">Hit rate</div>
+          <div class="cache-stat-val">{read_numerator}/{read_denominator}</div>
+          <div class="cache-stat-lbl">Read numerator / denominator</div>
         </div>
         <div>
-          <div class="cache-stat-val">{cache_ratio}</div>
-          <div class="cache-stat-lbl">Cache ratio</div>
+          <div class="cache-stat-val">{write_share}</div>
+          <div class="cache-stat-lbl">Cache-write share</div>
         </div>
         <div>
-          <div class="cache-stat-val" style="color:#1a8a47">+${cache_saved}</div>
-          <div class="cache-stat-lbl">Saved</div>
+          <div class="cache-stat-val">{compactions}</div>
+          <div class="cache-stat-lbl">Direct compactions</div>
         </div>
       </div>
-      {inflection}
+      <p class="slide-sub">{method}; no cause, grade, or monetary effect is inferred.</p>
     </div>
   </section>"#,
-        grade_label = escape_html(&grade.label),
-        grade_color = escape_html(&grade.color),
-        grade_letter = escape_html(&grade.letter),
-        hit_rate = report.cache_health.cache_hit_rate,
-        cache_ratio = escape_html(&format_ratio(report.cache_health.efficiency_ratio)),
-        cache_saved = report.cache_health.savings.from_caching,
-        inflection = inflection_html(report),
+        read_share = escape_html(&crate::canonical_ratio_display(&cache.read_share)),
+        read_numerator = cache.read_share.numerator,
+        read_denominator = cache.read_share.denominator,
+        write_share = escape_html(&crate::canonical_ratio_display(&cache.write_share)),
+        compactions = cache.direct_compactions,
+        method = escape_html(&cache.read_share.method_id),
     )
 }
 
@@ -137,7 +155,7 @@ pub fn slide_activity(report: &Report) -> String {
   <section class="slide s-dark data-slide">
     <div class="slide-inner">
       <div class="section-label">Activity</div>
-      <div class="section-title">Daily spend</div>
+      <div class="section-title">Daily active-time union</div>
       <div class="activity-chart">{bars}</div>
     </div>
   </section>"#,
@@ -147,13 +165,13 @@ pub fn slide_activity(report: &Report) -> String {
 
 pub fn slide_model_and_projects(report: &Report) -> String {
     format!(
-        r#"  <!-- ── 9. MODEL MIX + PROJECTS ── -->
-  <section class="slide s-black data-slide">
+        r#"  <!-- ── 9. MODEL REQUEST MIX + PROJECTS ── -->
+  <section id="model-projects" class="slide s-black data-slide">
     <div class="slide-inner">
       <div class="data-grid-2">
         <div>
-          <div class="section-label">Model mix</div>
-          <div class="section-title">Routing</div>
+          <div class="section-label">Model request mix</div>
+          <div class="section-title">Full request population</div>
           <div class="model-list">{model_rows}</div>
         </div>
         <div>
@@ -176,8 +194,8 @@ pub fn slide_sessions_and_subagents(report: &Report) -> String {
     <div class="slide-inner">
       <div class="data-grid-2">
         <div>
-          <div class="section-label">Costliest sessions</div>
-          <div class="section-title">Heaviest runs</div>
+          <div class="section-label">Largest sessions</div>
+          <div class="section-title">Observed runs</div>
           <div class="session-list">{sessions}</div>
         </div>
         <div>
@@ -196,8 +214,10 @@ pub fn slide_sessions_and_subagents(report: &Report) -> String {
 pub fn slide_prompts_and_savings(report: &Report) -> String {
     let human_pct = report.wrapped_story.prompt_ratio.human_pct;
     let tool_pct = 100u64.saturating_sub(human_pct);
+    let read_share = crate::canonical_ratio_display(&report.canonical_metrics.cache.read_share);
+    let write_share = crate::canonical_ratio_display(&report.canonical_metrics.cache.write_share);
     format!(
-        r#"  <!-- ── 11. PROMPT RATIO + CACHE SAVINGS ── -->
+        r#"  <!-- ── 11. PROMPT RATIO + CACHE EVIDENCE ── -->
   <section class="slide s-black data-slide">
     <div class="slide-inner">
       <div class="data-grid-2">
@@ -213,10 +233,10 @@ pub fn slide_prompts_and_savings(report: &Report) -> String {
           </div>
         </div>
         <div>
-          <div class="section-label">Cache efficiency</div>
-          <div class="section-title">Savings</div>
-          <div class="savings-row"><span class="s-muted">Saved from caching</span><span class="s-pos">+${cache_saved}</span></div>
-          <div class="savings-row"><span class="s-muted">Overhead from breaks</span><span class="s-neg">-${cache_overhead}</span></div>
+          <div class="section-label">Cache evidence</div>
+          <div class="section-title">Observed token shares</div>
+          <div class="savings-row"><span class="s-muted">Cache-read share</span><span class="s-pos">{read_share}</span></div>
+          <div class="savings-row"><span class="s-muted">Cache-write share</span><span class="s-neg">{write_share}</span></div>
         </div>
       </div>
     </div>
@@ -225,8 +245,8 @@ pub fn slide_prompts_and_savings(report: &Report) -> String {
         human_count = report.wrapped_story.prompt_ratio.human,
         tool_count = report.wrapped_story.prompt_ratio.tool,
         tool_pct = tool_pct,
-        cache_saved = report.cache_health.savings.from_caching,
-        cache_overhead = report.cache_health.savings.wasted_from_breaks,
+        read_share = escape_html(&read_share),
+        write_share = escape_html(&write_share),
     )
 }
 
@@ -258,6 +278,86 @@ pub fn slide_recommendations(report: &Report) -> String {
     )
 }
 
+pub fn slide_insights(report: &Report) -> String {
+    let families = report
+        .insights
+        .families
+        .iter()
+        .map(|family| {
+            format!(
+                r#"<div class="eyebrow">{}</div>"#,
+                escape_html(&super::insights::family_line(family))
+            )
+        })
+        .collect::<Vec<_>>()
+        .join("");
+    let cards = super::insights::cards(report, false)
+        .map(|card| {
+            let facts = card
+                .supporting_facts
+                .iter()
+                .map(|fact| {
+                    format!(
+                        "<div>{}</div>",
+                        escape_html(&super::insights::fact_line(fact))
+                    )
+                })
+                .collect::<Vec<_>>()
+                .join("");
+            let action = card.action.as_ref().map_or(String::new(), |action| {
+                let alternatives = action
+                    .alternative_explanations
+                    .iter()
+                    .map(|alternative| {
+                        format!(
+                            "<div>Alternative · {}</div>",
+                            escape_html(alternative)
+                        )
+                    })
+                    .collect::<Vec<_>>()
+                    .join("");
+                format!(
+                    "<p>Experiment · {}</p><div class=\"eyebrow\">{}</div>",
+                    escape_html(&action.experiment),
+                    alternatives,
+                )
+            });
+            let comparison = super::insights::comparison_line(card).map_or(String::new(), |line| {
+                format!("<div>{}</div>", escape_html(&line))
+            });
+            let narratives = super::insights::narrative_lines(card)
+                .into_iter()
+                .map(|line| format!("<div>{}</div>", escape_html(&line)))
+                .collect::<Vec<_>>()
+                .join("");
+            format!(
+                r#"<article class="card"><div class="eyebrow">{class}</div><h3>{title}</h3><p>{finding}</p><div class="eyebrow">{context}{narratives}</div><div class="eyebrow">{comparison}<div>{limitations}</div>{facts}</div>{action}</article>"#,
+                class = escape_html(&card.class),
+                title = escape_html(&card.title),
+                finding = escape_html(&card.finding),
+                context = escape_html(&super::insights::context_line(card)),
+                narratives = narratives,
+                comparison = comparison,
+                limitations = escape_html(&super::insights::limitations_line(card)),
+                facts = facts,
+                action = action,
+            )
+        })
+        .collect::<Vec<_>>()
+        .join("");
+    format!(
+        r#"  <!-- ── EXPLAINABLE INSIGHTS ── -->
+  <section class="slide s-dark data-slide">
+    <div class="slide-inner">
+      <div class="section-label">Explainable insights</div>
+      <div class="section-title">Evidence, limits, and next experiments</div>
+      <div class="eyebrow">{families}</div>
+      <div class="card-grid">{cards}</div>
+    </div>
+  </section>"#,
+    )
+}
+
 fn hero_stats_html(report: &Report) -> String {
     report
         .wrapped_story
@@ -274,10 +374,11 @@ fn hero_stats_html(report: &Report) -> String {
         .join("")
 }
 
-/// Keeps cents on 4-digit totals for the slide hero so the headline cost matches
-/// billed spend more precisely than the compact `format_currency` summary style.
+/// Keeps cents on 4-digit API-equivalent estimates for the slide hero.
 fn total_cost_display(report: &Report) -> String {
-    let cost = report.cost_analysis.total_cost;
+    let Some(cost) = crate::canonical_local_cost(report) else {
+        return "Unavailable".to_string();
+    };
     if cost >= 1000.0 {
         let cents = (cost * 100.0).round() as u64;
         let whole = cents / 100;
@@ -289,11 +390,12 @@ fn total_cost_display(report: &Report) -> String {
 }
 
 fn activity_bars(report: &Report) -> String {
-    let activity_days = &report.cost_analysis.daily_costs;
-    let max_cost = activity_days
+    let activity_days = &report.canonical_metrics.active_time.days;
+    let max_active = activity_days
         .iter()
-        .map(|day| day.cost)
-        .fold(0.0f64, f64::max);
+        .map(|day| day.active_seconds)
+        .max()
+        .unwrap_or(0);
     if activity_days.is_empty() {
         return r#"<div style="opacity:0.35;font-size:13px">No daily data available.</div>"#
             .to_string();
@@ -302,8 +404,8 @@ fn activity_bars(report: &Report) -> String {
     activity_days
         .iter()
         .map(|day| {
-            let pct = if max_cost > 0.0 {
-                ((day.cost / max_cost) * 100.0).round() as u64
+            let pct = if max_active > 0 {
+                ((u128::from(day.active_seconds) * 100) / u128::from(max_active)) as u64
             } else {
                 0
             };
@@ -311,7 +413,7 @@ fn activity_bars(report: &Report) -> String {
             format!(
                 r#"<div class="spark-col" title="{} · {}"><div class="spark-bar" style="height:{}%"></div><span class="spark-label">{}</span></div>"#,
                 escape_html(&day.date),
-                escape_html(&format_currency(day.cost)),
+                escape_html(&format!("{} active seconds", day.active_seconds)),
                 pct,
                 escape_html(label),
             )
@@ -321,26 +423,29 @@ fn activity_bars(report: &Report) -> String {
 }
 
 fn model_rows(report: &Report) -> String {
-    report
-        .cost_analysis
-        .model_costs
-        .iter()
-        .map(|(model, cost)| {
-            let share = if report.cost_analysis.total_cost > 0.0 {
-                (cost / report.cost_analysis.total_cost) * 100.0
-            } else {
-                0.0
-            };
+    if !report.model_routing.available {
+        return r#"<p style="opacity:0.55;font-size:13px">No direct request observations.</p>"#
+            .to_string();
+    }
+    let rows = crate::model_request_mix_rows(&report.model_routing)
+        .into_iter()
+        .map(|row| {
             format!(
-                r#"<div class="model-row"><div class="model-row-top"><strong>{}</strong><span>{} · {:.0}%</span></div><div class="bar-track"><div class="bar-fill" style="width:{:.1}%"></div></div></div>"#,
-                escape_html(model),
-                escape_html(&format_currency(*cost)),
-                share,
-                share,
+                r#"<div class="model-row"><div class="model-row-top"><strong>{}</strong><span>{}%</span></div><div class="bar-track"><div class="bar-fill" style="width:{}%"></div></div></div>"#,
+                escape_html(row.label),
+                row.share_pct,
+                row.share_pct,
             )
         })
         .collect::<Vec<_>>()
-        .join("")
+        .join("");
+    format!(
+        r#"{rows}<p style="opacity:0.62;font-size:12px">{method} · {observations} requests<br>Local cost coverage: {coverage} · {unpriced} unpriced requests</p>"#,
+        method = escape_html(&report.model_routing.method_id),
+        observations = report.model_routing.observations,
+        coverage = escape_html(&report.canonical_metrics.cost.coverage),
+        unpriced = report.canonical_metrics.cost.unpriced_requests,
+    )
 }
 
 fn project_rows(report: &Report) -> String {
@@ -355,7 +460,8 @@ fn project_rows(report: &Report) -> String {
         .take(8)
         .map(|project| {
             let bar_pct = if max_project_tokens > 0 {
-                (project.output_tokens * 100 / max_project_tokens).min(100)
+                ((u128::from(project.output_tokens) * 100) / u128::from(max_project_tokens))
+                    .min(100) as u64
             } else {
                 0
             };
@@ -383,15 +489,14 @@ fn costliest_sessions(report: &Report) -> String {
         .iter()
         .take(6)
         .map(|session| {
-            let date = session
-                .timestamp_start
-                .as_deref()
-                .map(|value| &value[..value.len().min(10)])
-                .unwrap_or("—");
+            let timing = format!(
+                "{}s active / {}s elapsed",
+                session.active_seconds, session.elapsed_seconds
+            );
             format!(
                 r#"<div class="session-row"><div><div class="session-project">{}</div><div class="session-meta">{}</div></div><span class="token-badge">{}</span></div>"#,
                 escape_html(&session.project_name),
-                escape_html(date),
+                escape_html(&timing),
                 escape_html(&format_tokens(session.total_tokens)),
             )
         })
@@ -411,11 +516,10 @@ fn subagent_spikes(report: &Report) -> String {
         .iter()
         .take(6)
         .map(|subagent| {
-            let date = subagent
-                .timestamp_start
-                .as_deref()
-                .map(|value| &value[..value.len().min(10)])
-                .unwrap_or("—");
+            let timing = format!(
+                "{}s active / {}s elapsed",
+                subagent.active_seconds, subagent.elapsed_seconds
+            );
             let prompt = trim_text(
                 subagent
                     .first_prompt
@@ -426,7 +530,7 @@ fn subagent_spikes(report: &Report) -> String {
             format!(
                 r#"<div class="session-row"><div><div class="session-project">{}</div><div class="session-meta">{}</div><div class="session-prompt">{}</div></div><span class="token-badge">{}</span></div>"#,
                 escape_html(subagent.project_name.as_deref().unwrap_or("Subagent")),
-                escape_html(date),
+                escape_html(&timing),
                 escape_html(&prompt),
                 escape_html(&format_tokens(subagent.total_tokens)),
             )
@@ -513,24 +617,6 @@ fn top_tool_data(report: &Report) -> (String, String) {
         .unwrap_or_else(|| ("—".to_string(), "No tool data".to_string()))
 }
 
-fn inflection_html(report: &Report) -> String {
-    report
-        .inflection
-        .as_ref()
-        .map(|inflection| {
-            let class = if inflection.direction == "worsened" {
-                "warn"
-            } else {
-                "good"
-            };
-            format!(
-                r#"<div class="inflection-note {class}">{}</div>"#,
-                escape_html(&inflection.summary),
-            )
-        })
-        .unwrap_or_default()
-}
-
 fn biggest_session_content(report: &Report) -> String {
     let by_cost = report.wrapped_story.biggest_session_by_cost.as_ref();
     let by_tokens = report.wrapped_story.biggest_session_by_tokens.as_ref();
@@ -539,23 +625,23 @@ fn biggest_session_content(report: &Report) -> String {
         (Some(cost), Some(tokens)) if cost.session_id == tokens.session_id => format!(
             r#"<div class="slide-label" style="color:rgba(0,0,0,0.45)">Biggest session</div>
       <div class="card-grid">{card}</div>"#,
-            card = biggest_session_card(cost, "by cost + tokens", true, true),
+            card = biggest_session_card(cost, "by source estimate + tokens", true, true),
         ),
         (Some(cost), Some(tokens)) => format!(
             r#"<div class="slide-label" style="color:rgba(0,0,0,0.45)">Biggest session</div>
       <div class="card-grid">{cost_card}{token_card}</div>"#,
-            cost_card = biggest_session_card(cost, "by cost", true, false),
+            cost_card = biggest_session_card(cost, "by source estimate", true, false),
             token_card = biggest_session_card(tokens, "by tokens", false, true),
         ),
         (Some(cost), None) => format!(
             r#"<div class="slide-label" style="color:rgba(0,0,0,0.45)">Biggest session</div>
       <div class="card-grid">{card}</div>"#,
-            card = biggest_session_card(cost, "by cost", true, true),
+            card = biggest_session_card(cost, "by source estimate", true, true),
         ),
         (None, Some(tokens)) => format!(
             r#"<div class="slide-label" style="color:rgba(0,0,0,0.45)">Biggest session</div>
       <div class="card-grid">{card}</div>"#,
-            card = biggest_session_card(tokens, "by tokens", true, true),
+            card = biggest_session_card(tokens, "by tokens", false, true),
         ),
         (None, None) => {
             r#"<div class="slide-label" style="color:rgba(0,0,0,0.45)">Biggest session</div><p class="slide-sub" style="color:#000">No session data</p>"#.to_string()
@@ -569,17 +655,16 @@ fn biggest_session_card(
     show_cost: bool,
     show_tokens: bool,
 ) -> String {
-    let date = session
-        .timestamp_start
-        .as_deref()
-        .map(|value| &value[..value.len().min(10)])
-        .unwrap_or("—");
+    let timing = format!(
+        "{}s active / {}s elapsed",
+        session.active_seconds, session.elapsed_seconds
+    );
     let preview = trim_text(session.first_prompt.as_deref().unwrap_or(""), 120);
 
     let mut metrics = Vec::new();
     if show_cost {
         metrics.push(format!(
-            "Cost {cost}",
+            "Source estimate {cost}",
             cost = format_currency(session.cost_usd)
         ));
     }
@@ -594,12 +679,12 @@ fn biggest_session_card(
         r#"<article class="card">
         <div class="eyebrow">{label}</div>
         <h3>{project}</h3>
-        <p>{date} · {metrics}</p>
+        <p>{timing} · {metrics}</p>
         <p>{preview}</p>
       </article>"#,
         label = escape_html(label),
         project = escape_html(&session.project_name),
-        date = escape_html(date),
+        timing = escape_html(&timing),
         metrics = escape_html(&metrics.join(" · ")),
         preview = escape_html(&preview),
     )
@@ -611,13 +696,15 @@ mod tests {
     use crate::Report;
 
     fn report_with_cost(cost: f64) -> Report {
-        Report {
-            cost_analysis: crate::CostAnalysis {
-                total_cost: cost,
-                ..Default::default()
-            },
+        let mut report = Report {
             ..Default::default()
-        }
+        };
+        report
+            .canonical_metrics
+            .cost
+            .local_api_equivalent
+            .amount_usd = Some(cost);
+        report
     }
 
     #[test]

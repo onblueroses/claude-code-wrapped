@@ -4,22 +4,6 @@ use crate::{
 };
 use std::collections::BTreeMap;
 
-#[derive(Clone, Copy)]
-struct Pricing {
-    input: f64,
-    output: f64,
-    cache_write: f64,
-    cache_read: f64,
-}
-
-const DEFAULT_PRICING: Pricing = Pricing {
-    input: 5.0,
-    output: 25.0,
-    cache_write: 6.25,
-    cache_read: 0.50,
-};
-// Approximate fallback pricing for records that do not include `costUSD`.
-
 pub fn analyze_usage(
     year: i32,
     daily_from_jsonl: &[DailyAggregate],
@@ -33,7 +17,7 @@ pub fn analyze_usage(
 
             for (model_name, model_usage) in &day.models {
                 let cost = calculate_cost(model_name, &model_usage.as_usage(), model_usage.cost);
-                day_cost += cost;
+                day_cost = (day_cost + cost).min(f64::MAX);
                 model_breakdowns.push(ModelCostBreakdown {
                     model: model_name.clone(),
                     cost,
@@ -84,19 +68,24 @@ pub fn analyze_usage(
     let mut model_costs = BTreeMap::new();
     for day in &daily_costs {
         for model in &day.models {
-            *model_costs
+            let total = model_costs
                 .entry(clean_model_name(&model.model))
-                .or_insert(0.0) += model.cost;
+                .or_insert(0.0);
+            *total = (*total + model.cost).min(f64::MAX);
         }
     }
 
     let totals = daily_from_jsonl
         .iter()
         .fold(TokenUsage::default(), |mut totals, day| {
-            totals.input_tokens += day.input_tokens;
-            totals.output_tokens += day.output_tokens;
-            totals.cache_creation_tokens += day.cache_creation_tokens;
-            totals.cache_read_tokens += day.cache_read_tokens;
+            totals.input_tokens = totals.input_tokens.saturating_add(day.input_tokens);
+            totals.output_tokens = totals.output_tokens.saturating_add(day.output_tokens);
+            totals.cache_creation_tokens = totals
+                .cache_creation_tokens
+                .saturating_add(day.cache_creation_tokens);
+            totals.cache_read_tokens = totals
+                .cache_read_tokens
+                .saturating_add(day.cache_read_tokens);
             totals
         });
 
@@ -104,7 +93,7 @@ pub fn analyze_usage(
         .sessions
         .iter()
         .map(|session| session.duration_minutes)
-        .sum::<u64>();
+        .fold(0u64, u64::saturating_add);
     let longest_session = session_breakdown
         .sessions
         .iter()
@@ -176,47 +165,8 @@ pub fn clean_model_name(name: &str) -> String {
 }
 
 fn calculate_cost(model_name: &str, tokens: &TokenUsage, recorded_cost_usd: f64) -> f64 {
-    if recorded_cost_usd > 0.0 {
-        return recorded_cost_usd;
-    }
-    approximate_cost(model_name, tokens)
-}
-
-pub(crate) fn approximate_cost(model_name: &str, tokens: &TokenUsage) -> f64 {
-    let pricing = pricing_for(model_name);
-    let input = tokens.input_tokens as f64 / 1_000_000.0 * pricing.input;
-    let output = tokens.output_tokens as f64 / 1_000_000.0 * pricing.output;
-    let cache_write = tokens.cache_creation_tokens as f64 / 1_000_000.0 * pricing.cache_write;
-    let cache_read = tokens.cache_read_tokens as f64 / 1_000_000.0 * pricing.cache_read;
-    input + output + cache_write + cache_read
-}
-
-fn pricing_for(model_name: &str) -> Pricing {
-    let lower = model_name.to_lowercase();
-    if lower.contains("haiku") {
-        Pricing {
-            input: 1.0,
-            output: 5.0,
-            cache_write: 1.25,
-            cache_read: 0.10,
-        }
-    } else if lower.contains("sonnet") {
-        Pricing {
-            input: 3.0,
-            output: 15.0,
-            cache_write: 3.75,
-            cache_read: 0.30,
-        }
-    } else if lower.contains("opus") {
-        Pricing {
-            input: 5.0,
-            output: 25.0,
-            cache_write: 6.25,
-            cache_read: 0.50,
-        }
-    } else {
-        DEFAULT_PRICING
-    }
+    let _ = (model_name, tokens);
+    recorded_cost_usd
 }
 
 fn median(mut values: Vec<f64>) -> f64 {
@@ -229,39 +179,5 @@ fn median(mut values: Vec<f64>) -> f64 {
         values[mid]
     } else {
         (values[mid - 1] + values[mid]) / 2.0
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::approximate_cost;
-    use crate::TokenUsage;
-
-    fn tokens() -> TokenUsage {
-        TokenUsage {
-            input_tokens: 1_000_000,
-            output_tokens: 1_000_000,
-            cache_creation_tokens: 1_000_000,
-            cache_read_tokens: 1_000_000,
-        }
-    }
-
-    #[test]
-    fn approximate_cost_prices_opus_above_haiku_for_the_same_usage() {
-        let usage = tokens();
-
-        assert!(
-            approximate_cost("claude-opus-4-1", &usage)
-                > approximate_cost("claude-haiku-3-5", &usage)
-        );
-    }
-
-    #[test]
-    fn approximate_cost_uses_opus_pricing_for_unknown_models() {
-        let usage = tokens();
-        let unknown = approximate_cost("mystery-model", &usage);
-        let opus = approximate_cost("claude-opus-4-1", &usage);
-
-        assert!((unknown - opus).abs() < f64::EPSILON);
     }
 }

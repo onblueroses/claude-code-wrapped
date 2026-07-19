@@ -1,0 +1,499 @@
+artifact-format public-api-signatures/v7
+extractor-version rustdoc-html/v11
+rustc-release 1.95.0
+rustc-commit 59807616e1fa2540724bfbac14d7976d7e4a3860
+rustdoc-release 1.95.0
+rustdoc-commit 59807616e1fa2540724bfbac14d7976d7e4a3860
+cargo-release 1.95.0
+cargo-commit f2d3ce0bd7f24a49f8f72d9000448f8838c4e850
+target x86_64-unknown-linux-gnu
+feature-surface default-no-package-features
+crate ccwrapped
+crate-version 0.2.0
+source-revision-claim 1eeec07ea37e861f489696dcb2d5b2625397413d
+source-tree-sha256 63bb21a40659868398240b0c0d0da336997440cbd438887491e469d9bb0b9c81
+extractor-tree-sha256 2ce69595b47a6e668068c877152eab0ee4b6632e915814291e67d8929023d8c1
+dependency-build-scripts-sha256 c006c03a8e7a2ccd948ef27485feacf9609b61135797f014afaa4ff20c604f48
+dependency-sources-sha256 78780e7b1f3af52a5eef12356c0aa6a61470e6c048bf68e552f43f3f97c60465
+module ccwrapped
+module ccwrapped::analyzers
+module ccwrapped::analyzers::cache
+module ccwrapped::analyzers::cost
+module ccwrapped::analyzers::models
+module ccwrapped::analyzers::recommendations
+module ccwrapped::analyzers::story
+module ccwrapped::fmt
+module ccwrapped::readers
+module ccwrapped::readers::discovery
+module ccwrapped::readers::jsonl
+module ccwrapped::readers::session
+module ccwrapped::readers::wire
+module ccwrapped::renderers
+module ccwrapped::renderers::html
+module ccwrapped::renderers::markdown
+module ccwrapped::renderers::share_card
+module ccwrapped::renderers::terminal
+module ccwrapped::renderers::terminal::widgets
+module ccwrapped::report
+reexport ccwrapped :: pub use ccwrapped::fmt::*;
+reexport ccwrapped :: pub use ccwrapped::report::*;
+item fn ccwrapped::analyzers::cache::analyze_cache_health :: pub fn analyze_cache_health(daily_from_jsonl: &[ccwrapped::report::DailyAggregate]) -> ccwrapped::report::CacheHealth
+item fn ccwrapped::analyzers::cache::detect_inflection_points :: pub fn detect_inflection_points( daily_from_jsonl: &[ccwrapped::report::DailyAggregate], ) -> core::option::Option<ccwrapped::report::InflectionPoint>
+item fn ccwrapped::analyzers::cost::analyze_usage :: pub fn analyze_usage( year: i32, daily_from_jsonl: &[ccwrapped::report::DailyAggregate], session_breakdown: &ccwrapped::report::SessionBreakdown, ) -> ccwrapped::report::CostAnalysis
+item fn ccwrapped::analyzers::cost::clean_model_name :: pub fn clean_model_name(name: &str) -> alloc::string::String
+item fn ccwrapped::analyzers::models::analyze_model_routing :: pub fn analyze_model_routing( cost_analysis: &ccwrapped::report::CostAnalysis, entries: &[ccwrapped::report::AssistantEntry], ) -> ccwrapped::report::ModelRouting
+item fn ccwrapped::analyzers::models::analyze_session_intelligence :: pub fn analyze_session_intelligence( session_breakdown: &ccwrapped::report::SessionBreakdown, entries: &[ccwrapped::report::AssistantEntry], ) -> ccwrapped::report::SessionIntel
+item fn ccwrapped::analyzers::models::detect_anomalies :: pub fn detect_anomalies(cost_analysis: &ccwrapped::report::CostAnalysis) -> ccwrapped::report::AnomalyReport
+item fn ccwrapped::analyzers::recommendations::generate_recommendations :: pub fn generate_recommendations( cost_analysis: &ccwrapped::report::CostAnalysis, cache_health: &ccwrapped::report::CacheHealth, anomalies: &ccwrapped::report::AnomalyReport, inflection: &core::option::Option<ccwrapped::report::InflectionPoint>, session_intel: &ccwrapped::report::SessionIntel, model_routing: &ccwrapped::report::ModelRouting, project_breakdown: &[ccwrapped::report::ProjectSummary], ) -> alloc::vec::Vec<ccwrapped::report::Recommendation>
+item fn ccwrapped::analyzers::story::build_wrapped_story :: pub fn build_wrapped_story( report: &ccwrapped::report::Report, entries: &[ccwrapped::report::AssistantEntry], ) -> ccwrapped::report::WrappedStory
+item fn ccwrapped::fmt::busiest_hour :: pub fn busiest_hour(entries: &[ccwrapped::report::AssistantEntry]) -> core::option::Option<ccwrapped::report::TimeBucket>
+item fn ccwrapped::fmt::escape_html :: pub fn escape_html(value: &str) -> alloc::string::String
+item fn ccwrapped::fmt::format_currency :: pub fn format_currency(value: f64) -> alloc::string::String
+item fn ccwrapped::fmt::format_hour :: pub fn format_hour(hour: u8) -> alloc::string::String
+item fn ccwrapped::fmt::format_ratio :: pub fn format_ratio(value: u64) -> alloc::string::String
+item fn ccwrapped::fmt::format_tokens :: pub fn format_tokens(value: u64) -> alloc::string::String
+item fn ccwrapped::fmt::home_dir :: pub fn home_dir() -> core::option::Option<std::path::PathBuf>
+item fn ccwrapped::fmt::parse_timestamp :: pub fn parse_timestamp(timestamp: &str) -> core::option::Option<chrono::datetime::DateTime<chrono::offset::fixed::FixedOffset>>
+item fn ccwrapped::fmt::project_slug :: pub fn project_slug(name: &str) -> alloc::string::String
+item fn ccwrapped::fmt::ranked_projects :: pub fn ranked_projects( project_breakdown: &[ccwrapped::report::ProjectSummary], ) -> alloc::vec::Vec<&ccwrapped::report::ProjectSummary>
+item fn ccwrapped::fmt::round_ratio :: pub fn round_ratio(numerator: u64, denominator: u64) -> u64
+item fn ccwrapped::fmt::timestamp_date_key :: pub fn timestamp_date_key(timestamp: &str) -> core::option::Option<alloc::string::String>
+item fn ccwrapped::fmt::timestamp_hour :: pub fn timestamp_hour(timestamp: &str) -> core::option::Option<u8>
+item fn ccwrapped::fmt::timestamp_year :: pub fn timestamp_year(timestamp: &str) -> core::option::Option<i32>
+item fn ccwrapped::fmt::trim_text :: pub fn trim_text(value: &str, max: usize) -> alloc::string::String
+item fn ccwrapped::fmt::weekday_from_date :: pub fn weekday_from_date(date: &str) -> core::option::Option<alloc::string::String>
+item fn ccwrapped::fmt::with_grouping :: pub fn with_grouping(value: u64) -> alloc::string::String
+item fn ccwrapped::readers::discovery::discover_jsonl_files :: pub fn discover_jsonl_files(projects_dir: &std::path::Path) -> alloc::vec::Vec<std::path::PathBuf>
+item fn ccwrapped::readers::discovery::discover_session_files :: pub fn discover_session_files(projects_dir: &std::path::Path) -> alloc::vec::Vec<std::path::PathBuf>
+item fn ccwrapped::readers::jsonl::aggregate_by_project :: pub fn aggregate_by_project(entries: &[ccwrapped::report::AssistantEntry]) -> alloc::vec::Vec<ccwrapped::report::ProjectSummary>
+item fn ccwrapped::readers::jsonl::aggregate_daily :: pub fn aggregate_daily(entries: &[ccwrapped::report::AssistantEntry]) -> alloc::vec::Vec<ccwrapped::report::DailyAggregate>
+item fn ccwrapped::readers::jsonl::decode_project_hash :: pub fn decode_project_hash(hash: &str) -> (core::option::Option<alloc::string::String>, alloc::string::String)
+item fn ccwrapped::readers::jsonl::derive_project_name :: pub fn derive_project_name(path: &str) -> alloc::string::String
+item fn ccwrapped::readers::jsonl::read_all_jsonl :: pub fn read_all_jsonl( projects_dir: &std::path::Path, year: core::option::Option<i32>, ) -> alloc::vec::Vec<ccwrapped::report::AssistantEntry>
+item fn ccwrapped::readers::jsonl::resolve_project_path :: pub fn resolve_project_path( cwd_counts: &std::collections::hash::map::HashMap<alloc::string::String, usize>, fallback_hash: &str, ) -> (core::option::Option<alloc::string::String>, alloc::string::String)
+item fn ccwrapped::readers::session::read_session_breakdown :: pub fn read_session_breakdown( projects_dir: &std::path::Path, year: core::option::Option<i32>, ) -> ccwrapped::report::SessionBreakdown
+item struct ccwrapped::readers::wire::JsonlMessage :: pub struct JsonlMessage { pub id: core::option::Option<alloc::string::String>, pub model: core::option::Option<alloc::string::String>, pub usage: core::option::Option<ccwrapped::readers::wire::JsonlUsage>, pub content: core::option::Option<serde_json::value::Value>, }
+trait ccwrapped::readers::wire::JsonlMessage :: impl core::default::Default for ccwrapped::readers::wire::JsonlMessage
+trait ccwrapped::readers::wire::JsonlMessage :: impl core::fmt::Debug for ccwrapped::readers::wire::JsonlMessage
+trait ccwrapped::readers::wire::JsonlMessage :: impl core::marker::Send for ccwrapped::readers::wire::JsonlMessage
+trait ccwrapped::readers::wire::JsonlMessage :: impl core::marker::Sync for ccwrapped::readers::wire::JsonlMessage
+trait ccwrapped::readers::wire::JsonlMessage :: impl core::marker::Unpin for ccwrapped::readers::wire::JsonlMessage
+trait ccwrapped::readers::wire::JsonlMessage :: impl core::panic::unwind_safe::RefUnwindSafe for ccwrapped::readers::wire::JsonlMessage
+trait ccwrapped::readers::wire::JsonlMessage :: impl core::panic::unwind_safe::UnwindSafe for ccwrapped::readers::wire::JsonlMessage
+trait ccwrapped::readers::wire::JsonlMessage :: impl<'de> serde_core::de::Deserialize<'de> for ccwrapped::readers::wire::JsonlMessage
+item struct ccwrapped::readers::wire::JsonlRecord :: pub struct JsonlRecord { pub record_type: core::option::Option<alloc::string::String>, pub is_sidechain: bool, pub message: core::option::Option<ccwrapped::readers::wire::JsonlMessage>, pub cost_usd: core::option::Option<f64>, pub timestamp: core::option::Option<alloc::string::String>, pub session_id: core::option::Option<alloc::string::String>, pub cwd: core::option::Option<alloc::string::String>, pub entrypoint: core::option::Option<alloc::string::String>, }
+trait ccwrapped::readers::wire::JsonlRecord :: impl core::default::Default for ccwrapped::readers::wire::JsonlRecord
+trait ccwrapped::readers::wire::JsonlRecord :: impl core::fmt::Debug for ccwrapped::readers::wire::JsonlRecord
+trait ccwrapped::readers::wire::JsonlRecord :: impl core::marker::Send for ccwrapped::readers::wire::JsonlRecord
+trait ccwrapped::readers::wire::JsonlRecord :: impl core::marker::Sync for ccwrapped::readers::wire::JsonlRecord
+trait ccwrapped::readers::wire::JsonlRecord :: impl core::marker::Unpin for ccwrapped::readers::wire::JsonlRecord
+trait ccwrapped::readers::wire::JsonlRecord :: impl core::panic::unwind_safe::RefUnwindSafe for ccwrapped::readers::wire::JsonlRecord
+trait ccwrapped::readers::wire::JsonlRecord :: impl core::panic::unwind_safe::UnwindSafe for ccwrapped::readers::wire::JsonlRecord
+trait ccwrapped::readers::wire::JsonlRecord :: impl<'de> serde_core::de::Deserialize<'de> for ccwrapped::readers::wire::JsonlRecord
+item struct ccwrapped::readers::wire::JsonlUsage :: pub struct JsonlUsage { pub input_tokens: core::option::Option<u64>, pub output_tokens: core::option::Option<u64>, pub cache_creation_input_tokens: core::option::Option<u64>, pub cache_read_input_tokens: core::option::Option<u64>, }
+trait ccwrapped::readers::wire::JsonlUsage :: impl core::default::Default for ccwrapped::readers::wire::JsonlUsage
+trait ccwrapped::readers::wire::JsonlUsage :: impl core::fmt::Debug for ccwrapped::readers::wire::JsonlUsage
+trait ccwrapped::readers::wire::JsonlUsage :: impl core::marker::Send for ccwrapped::readers::wire::JsonlUsage
+trait ccwrapped::readers::wire::JsonlUsage :: impl core::marker::Sync for ccwrapped::readers::wire::JsonlUsage
+trait ccwrapped::readers::wire::JsonlUsage :: impl core::marker::Unpin for ccwrapped::readers::wire::JsonlUsage
+trait ccwrapped::readers::wire::JsonlUsage :: impl core::panic::unwind_safe::RefUnwindSafe for ccwrapped::readers::wire::JsonlUsage
+trait ccwrapped::readers::wire::JsonlUsage :: impl core::panic::unwind_safe::UnwindSafe for ccwrapped::readers::wire::JsonlUsage
+trait ccwrapped::readers::wire::JsonlUsage :: impl<'de> serde_core::de::Deserialize<'de> for ccwrapped::readers::wire::JsonlUsage
+item fn ccwrapped::renderers::html::render_html :: pub fn render_html(report: &ccwrapped::report::Report) -> alloc::string::String
+item fn ccwrapped::renderers::markdown::render_markdown :: pub fn render_markdown(report: &ccwrapped::report::Report) -> alloc::string::String
+item fn ccwrapped::renderers::share_card::render_share_card :: pub fn render_share_card(report: &ccwrapped::report::Report) -> alloc::string::String
+item fn ccwrapped::renderers::terminal::color_choice :: pub fn color_choice(plain: bool) -> termcolor::ColorChoice
+item fn ccwrapped::renderers::terminal::render_terminal :: pub fn render_terminal(report: &ccwrapped::report::Report)
+item fn ccwrapped::renderers::terminal::render_terminal_to :: pub fn render_terminal_to(report: &ccwrapped::report::Report, writer: &mut impl termcolor::WriteColor)
+item fn ccwrapped::renderers::terminal::render_terminal_with :: pub fn render_terminal_with(report: &ccwrapped::report::Report, choice: termcolor::ColorChoice)
+item fn ccwrapped::renderers::terminal::widgets::label_value :: pub fn label_value(label: &str, value: &str, width: usize) -> alloc::string::String
+item fn ccwrapped::renderers::terminal::widgets::pad :: pub fn pad(text: &str, width: usize) -> alloc::string::String
+item fn ccwrapped::renderers::terminal::widgets::percentage_bar :: pub fn percentage_bar(pct: f64, width: usize) -> alloc::string::String
+item fn ccwrapped::renderers::terminal::widgets::ratio_bar :: pub fn ratio_bar(left_pct: f64, width: usize) -> (alloc::string::String, alloc::string::String)
+item fn ccwrapped::renderers::terminal::widgets::section_header :: pub fn section_header(title: &str, width: usize) -> alloc::string::String
+item fn ccwrapped::renderers::terminal::widgets::sparkline :: pub fn sparkline(values: &[f64], width: usize) -> alloc::string::String
+item fn ccwrapped::renderers::terminal::widgets::terminal_width :: pub fn terminal_width() -> usize
+item struct ccwrapped::report::Anomaly :: pub struct Anomaly { pub date: alloc::string::String, pub cost: f64, pub z_score: f64, pub severity: alloc::string::String, pub anomaly_type: alloc::string::String, pub avg_cost: f64, pub deviation: f64, pub cache_ratio_anomaly: bool, pub cache_output_ratio: u64, }
+trait ccwrapped::report::Anomaly :: impl core::clone::Clone for ccwrapped::report::Anomaly
+trait ccwrapped::report::Anomaly :: impl core::default::Default for ccwrapped::report::Anomaly
+trait ccwrapped::report::Anomaly :: impl core::fmt::Debug for ccwrapped::report::Anomaly
+trait ccwrapped::report::Anomaly :: impl core::marker::Send for ccwrapped::report::Anomaly
+trait ccwrapped::report::Anomaly :: impl core::marker::Sync for ccwrapped::report::Anomaly
+trait ccwrapped::report::Anomaly :: impl core::marker::Unpin for ccwrapped::report::Anomaly
+trait ccwrapped::report::Anomaly :: impl core::panic::unwind_safe::RefUnwindSafe for ccwrapped::report::Anomaly
+trait ccwrapped::report::Anomaly :: impl core::panic::unwind_safe::UnwindSafe for ccwrapped::report::Anomaly
+trait ccwrapped::report::Anomaly :: impl serde_core::ser::Serialize for ccwrapped::report::Anomaly
+item struct ccwrapped::report::AnomalyReport :: pub struct AnomalyReport { pub anomalies: alloc::vec::Vec<ccwrapped::report::Anomaly>, pub has_anomalies: bool, pub stats: ccwrapped::report::AnomalyStats, pub trend: alloc::string::String, }
+trait ccwrapped::report::AnomalyReport :: impl core::clone::Clone for ccwrapped::report::AnomalyReport
+trait ccwrapped::report::AnomalyReport :: impl core::default::Default for ccwrapped::report::AnomalyReport
+trait ccwrapped::report::AnomalyReport :: impl core::fmt::Debug for ccwrapped::report::AnomalyReport
+trait ccwrapped::report::AnomalyReport :: impl core::marker::Send for ccwrapped::report::AnomalyReport
+trait ccwrapped::report::AnomalyReport :: impl core::marker::Sync for ccwrapped::report::AnomalyReport
+trait ccwrapped::report::AnomalyReport :: impl core::marker::Unpin for ccwrapped::report::AnomalyReport
+trait ccwrapped::report::AnomalyReport :: impl core::panic::unwind_safe::RefUnwindSafe for ccwrapped::report::AnomalyReport
+trait ccwrapped::report::AnomalyReport :: impl core::panic::unwind_safe::UnwindSafe for ccwrapped::report::AnomalyReport
+trait ccwrapped::report::AnomalyReport :: impl serde_core::ser::Serialize for ccwrapped::report::AnomalyReport
+item struct ccwrapped::report::AnomalyStats :: pub struct AnomalyStats { pub mean: f64, pub std_dev: f64, }
+trait ccwrapped::report::AnomalyStats :: impl core::clone::Clone for ccwrapped::report::AnomalyStats
+trait ccwrapped::report::AnomalyStats :: impl core::default::Default for ccwrapped::report::AnomalyStats
+trait ccwrapped::report::AnomalyStats :: impl core::fmt::Debug for ccwrapped::report::AnomalyStats
+trait ccwrapped::report::AnomalyStats :: impl core::marker::Send for ccwrapped::report::AnomalyStats
+trait ccwrapped::report::AnomalyStats :: impl core::marker::Sync for ccwrapped::report::AnomalyStats
+trait ccwrapped::report::AnomalyStats :: impl core::marker::Unpin for ccwrapped::report::AnomalyStats
+trait ccwrapped::report::AnomalyStats :: impl core::panic::unwind_safe::RefUnwindSafe for ccwrapped::report::AnomalyStats
+trait ccwrapped::report::AnomalyStats :: impl core::panic::unwind_safe::UnwindSafe for ccwrapped::report::AnomalyStats
+trait ccwrapped::report::AnomalyStats :: impl serde_core::ser::Serialize for ccwrapped::report::AnomalyStats
+item struct ccwrapped::report::AssistantEntry :: pub struct AssistantEntry { pub session_id: alloc::string::String, pub project_hash: alloc::string::String, pub is_subagent: bool, pub cwd: core::option::Option<alloc::string::String>, pub timestamp: alloc::string::String, pub model: alloc::string::String, pub input_tokens: u64, pub output_tokens: u64, pub cache_creation_tokens: u64, pub cache_read_tokens: u64, pub cost_usd: f64, pub tool_names: alloc::vec::Vec<alloc::string::String>, }
+method ccwrapped::report::AssistantEntry :: pub fn usage(&self) -> ccwrapped::report::TokenUsage
+trait ccwrapped::report::AssistantEntry :: impl core::clone::Clone for ccwrapped::report::AssistantEntry
+trait ccwrapped::report::AssistantEntry :: impl core::default::Default for ccwrapped::report::AssistantEntry
+trait ccwrapped::report::AssistantEntry :: impl core::fmt::Debug for ccwrapped::report::AssistantEntry
+trait ccwrapped::report::AssistantEntry :: impl core::marker::Send for ccwrapped::report::AssistantEntry
+trait ccwrapped::report::AssistantEntry :: impl core::marker::Sync for ccwrapped::report::AssistantEntry
+trait ccwrapped::report::AssistantEntry :: impl core::marker::Unpin for ccwrapped::report::AssistantEntry
+trait ccwrapped::report::AssistantEntry :: impl core::panic::unwind_safe::RefUnwindSafe for ccwrapped::report::AssistantEntry
+trait ccwrapped::report::AssistantEntry :: impl core::panic::unwind_safe::UnwindSafe for ccwrapped::report::AssistantEntry
+trait ccwrapped::report::AssistantEntry :: impl serde_core::ser::Serialize for ccwrapped::report::AssistantEntry
+item struct ccwrapped::report::CacheGrade :: pub struct CacheGrade { pub letter: alloc::string::String, pub color: alloc::string::String, pub label: alloc::string::String, pub score: u64, pub signals: ccwrapped::report::CacheSignals, }
+trait ccwrapped::report::CacheGrade :: impl core::clone::Clone for ccwrapped::report::CacheGrade
+trait ccwrapped::report::CacheGrade :: impl core::default::Default for ccwrapped::report::CacheGrade
+trait ccwrapped::report::CacheGrade :: impl core::fmt::Debug for ccwrapped::report::CacheGrade
+trait ccwrapped::report::CacheGrade :: impl core::marker::Send for ccwrapped::report::CacheGrade
+trait ccwrapped::report::CacheGrade :: impl core::marker::Sync for ccwrapped::report::CacheGrade
+trait ccwrapped::report::CacheGrade :: impl core::marker::Unpin for ccwrapped::report::CacheGrade
+trait ccwrapped::report::CacheGrade :: impl core::panic::unwind_safe::RefUnwindSafe for ccwrapped::report::CacheGrade
+trait ccwrapped::report::CacheGrade :: impl core::panic::unwind_safe::UnwindSafe for ccwrapped::report::CacheGrade
+trait ccwrapped::report::CacheGrade :: impl serde_core::ser::Serialize for ccwrapped::report::CacheGrade
+item struct ccwrapped::report::CacheHealth :: pub struct CacheHealth { pub estimated_breaks: usize, pub reasons_ranked: alloc::vec::Vec<ccwrapped::report::CacheReason>, pub cache_hit_rate: f64, pub efficiency_ratio: u64, pub grade: ccwrapped::report::CacheGrade, pub savings: ccwrapped::report::CacheSavings, pub totals: ccwrapped::report::TokenUsage, }
+trait ccwrapped::report::CacheHealth :: impl core::clone::Clone for ccwrapped::report::CacheHealth
+trait ccwrapped::report::CacheHealth :: impl core::default::Default for ccwrapped::report::CacheHealth
+trait ccwrapped::report::CacheHealth :: impl core::fmt::Debug for ccwrapped::report::CacheHealth
+trait ccwrapped::report::CacheHealth :: impl core::marker::Send for ccwrapped::report::CacheHealth
+trait ccwrapped::report::CacheHealth :: impl core::marker::Sync for ccwrapped::report::CacheHealth
+trait ccwrapped::report::CacheHealth :: impl core::marker::Unpin for ccwrapped::report::CacheHealth
+trait ccwrapped::report::CacheHealth :: impl core::panic::unwind_safe::RefUnwindSafe for ccwrapped::report::CacheHealth
+trait ccwrapped::report::CacheHealth :: impl core::panic::unwind_safe::UnwindSafe for ccwrapped::report::CacheHealth
+trait ccwrapped::report::CacheHealth :: impl serde_core::ser::Serialize for ccwrapped::report::CacheHealth
+item struct ccwrapped::report::CacheMood :: pub struct CacheMood { pub title: alloc::string::String, pub note: alloc::string::String, }
+trait ccwrapped::report::CacheMood :: impl core::clone::Clone for ccwrapped::report::CacheMood
+trait ccwrapped::report::CacheMood :: impl core::default::Default for ccwrapped::report::CacheMood
+trait ccwrapped::report::CacheMood :: impl core::fmt::Debug for ccwrapped::report::CacheMood
+trait ccwrapped::report::CacheMood :: impl core::marker::Send for ccwrapped::report::CacheMood
+trait ccwrapped::report::CacheMood :: impl core::marker::Sync for ccwrapped::report::CacheMood
+trait ccwrapped::report::CacheMood :: impl core::marker::Unpin for ccwrapped::report::CacheMood
+trait ccwrapped::report::CacheMood :: impl core::panic::unwind_safe::RefUnwindSafe for ccwrapped::report::CacheMood
+trait ccwrapped::report::CacheMood :: impl core::panic::unwind_safe::UnwindSafe for ccwrapped::report::CacheMood
+trait ccwrapped::report::CacheMood :: impl serde_core::ser::Serialize for ccwrapped::report::CacheMood
+item struct ccwrapped::report::CacheReason :: pub struct CacheReason { pub reason: alloc::string::String, pub count: usize, pub percentage: u64, }
+trait ccwrapped::report::CacheReason :: impl core::clone::Clone for ccwrapped::report::CacheReason
+trait ccwrapped::report::CacheReason :: impl core::default::Default for ccwrapped::report::CacheReason
+trait ccwrapped::report::CacheReason :: impl core::fmt::Debug for ccwrapped::report::CacheReason
+trait ccwrapped::report::CacheReason :: impl core::marker::Send for ccwrapped::report::CacheReason
+trait ccwrapped::report::CacheReason :: impl core::marker::Sync for ccwrapped::report::CacheReason
+trait ccwrapped::report::CacheReason :: impl core::marker::Unpin for ccwrapped::report::CacheReason
+trait ccwrapped::report::CacheReason :: impl core::panic::unwind_safe::RefUnwindSafe for ccwrapped::report::CacheReason
+trait ccwrapped::report::CacheReason :: impl core::panic::unwind_safe::UnwindSafe for ccwrapped::report::CacheReason
+trait ccwrapped::report::CacheReason :: impl serde_core::ser::Serialize for ccwrapped::report::CacheReason
+item struct ccwrapped::report::CacheSavings :: pub struct CacheSavings { pub from_caching: i64, pub wasted_from_breaks: i64, }
+trait ccwrapped::report::CacheSavings :: impl core::clone::Clone for ccwrapped::report::CacheSavings
+trait ccwrapped::report::CacheSavings :: impl core::default::Default for ccwrapped::report::CacheSavings
+trait ccwrapped::report::CacheSavings :: impl core::fmt::Debug for ccwrapped::report::CacheSavings
+trait ccwrapped::report::CacheSavings :: impl core::marker::Send for ccwrapped::report::CacheSavings
+trait ccwrapped::report::CacheSavings :: impl core::marker::Sync for ccwrapped::report::CacheSavings
+trait ccwrapped::report::CacheSavings :: impl core::marker::Unpin for ccwrapped::report::CacheSavings
+trait ccwrapped::report::CacheSavings :: impl core::panic::unwind_safe::RefUnwindSafe for ccwrapped::report::CacheSavings
+trait ccwrapped::report::CacheSavings :: impl core::panic::unwind_safe::UnwindSafe for ccwrapped::report::CacheSavings
+trait ccwrapped::report::CacheSavings :: impl serde_core::ser::Serialize for ccwrapped::report::CacheSavings
+item struct ccwrapped::report::CacheSignals :: pub struct CacheSignals { pub hit_rate: u64, pub ratio: u64, pub trend: u64, pub breaks: u64, }
+trait ccwrapped::report::CacheSignals :: impl core::clone::Clone for ccwrapped::report::CacheSignals
+trait ccwrapped::report::CacheSignals :: impl core::default::Default for ccwrapped::report::CacheSignals
+trait ccwrapped::report::CacheSignals :: impl core::fmt::Debug for ccwrapped::report::CacheSignals
+trait ccwrapped::report::CacheSignals :: impl core::marker::Send for ccwrapped::report::CacheSignals
+trait ccwrapped::report::CacheSignals :: impl core::marker::Sync for ccwrapped::report::CacheSignals
+trait ccwrapped::report::CacheSignals :: impl core::marker::Unpin for ccwrapped::report::CacheSignals
+trait ccwrapped::report::CacheSignals :: impl core::panic::unwind_safe::RefUnwindSafe for ccwrapped::report::CacheSignals
+trait ccwrapped::report::CacheSignals :: impl core::panic::unwind_safe::UnwindSafe for ccwrapped::report::CacheSignals
+trait ccwrapped::report::CacheSignals :: impl serde_core::ser::Serialize for ccwrapped::report::CacheSignals
+item struct ccwrapped::report::CostAnalysis :: pub struct CostAnalysis { pub year: i32, pub active_days: usize, pub total_cost: f64, pub avg_daily_cost: f64, pub median_daily_cost: f64, pub peak_day: core::option::Option<ccwrapped::report::DailyCost>, pub daily_costs: alloc::vec::Vec<ccwrapped::report::DailyCost>, pub model_costs: alloc::collections::btree::map::BTreeMap<alloc::string::String, f64>, pub sessions: ccwrapped::report::SessionCostStats, pub totals: ccwrapped::report::TokenUsage, }
+trait ccwrapped::report::CostAnalysis :: impl core::clone::Clone for ccwrapped::report::CostAnalysis
+trait ccwrapped::report::CostAnalysis :: impl core::default::Default for ccwrapped::report::CostAnalysis
+trait ccwrapped::report::CostAnalysis :: impl core::fmt::Debug for ccwrapped::report::CostAnalysis
+trait ccwrapped::report::CostAnalysis :: impl core::marker::Send for ccwrapped::report::CostAnalysis
+trait ccwrapped::report::CostAnalysis :: impl core::marker::Sync for ccwrapped::report::CostAnalysis
+trait ccwrapped::report::CostAnalysis :: impl core::marker::Unpin for ccwrapped::report::CostAnalysis
+trait ccwrapped::report::CostAnalysis :: impl core::panic::unwind_safe::RefUnwindSafe for ccwrapped::report::CostAnalysis
+trait ccwrapped::report::CostAnalysis :: impl core::panic::unwind_safe::UnwindSafe for ccwrapped::report::CostAnalysis
+trait ccwrapped::report::CostAnalysis :: impl serde_core::ser::Serialize for ccwrapped::report::CostAnalysis
+item struct ccwrapped::report::CostTokens :: pub struct CostTokens { pub input: u64, pub output: u64, pub cache_read: u64, pub cache_write: u64, }
+trait ccwrapped::report::CostTokens :: impl core::clone::Clone for ccwrapped::report::CostTokens
+trait ccwrapped::report::CostTokens :: impl core::default::Default for ccwrapped::report::CostTokens
+trait ccwrapped::report::CostTokens :: impl core::fmt::Debug for ccwrapped::report::CostTokens
+trait ccwrapped::report::CostTokens :: impl core::marker::Send for ccwrapped::report::CostTokens
+trait ccwrapped::report::CostTokens :: impl core::marker::Sync for ccwrapped::report::CostTokens
+trait ccwrapped::report::CostTokens :: impl core::marker::Unpin for ccwrapped::report::CostTokens
+trait ccwrapped::report::CostTokens :: impl core::panic::unwind_safe::RefUnwindSafe for ccwrapped::report::CostTokens
+trait ccwrapped::report::CostTokens :: impl core::panic::unwind_safe::UnwindSafe for ccwrapped::report::CostTokens
+trait ccwrapped::report::CostTokens :: impl serde_core::ser::Serialize for ccwrapped::report::CostTokens
+item struct ccwrapped::report::DailyAggregate :: pub struct DailyAggregate { pub date: alloc::string::String, pub total_cost: f64, pub input_tokens: u64, pub output_tokens: u64, pub cache_creation_tokens: u64, pub cache_read_tokens: u64, pub message_count: usize, pub session_count: usize, pub cache_output_ratio: u64, pub models: alloc::collections::btree::map::BTreeMap<alloc::string::String, ccwrapped::report::ModelAggregate>, }
+trait ccwrapped::report::DailyAggregate :: impl core::clone::Clone for ccwrapped::report::DailyAggregate
+trait ccwrapped::report::DailyAggregate :: impl core::default::Default for ccwrapped::report::DailyAggregate
+trait ccwrapped::report::DailyAggregate :: impl core::fmt::Debug for ccwrapped::report::DailyAggregate
+trait ccwrapped::report::DailyAggregate :: impl core::marker::Send for ccwrapped::report::DailyAggregate
+trait ccwrapped::report::DailyAggregate :: impl core::marker::Sync for ccwrapped::report::DailyAggregate
+trait ccwrapped::report::DailyAggregate :: impl core::marker::Unpin for ccwrapped::report::DailyAggregate
+trait ccwrapped::report::DailyAggregate :: impl core::panic::unwind_safe::RefUnwindSafe for ccwrapped::report::DailyAggregate
+trait ccwrapped::report::DailyAggregate :: impl core::panic::unwind_safe::UnwindSafe for ccwrapped::report::DailyAggregate
+trait ccwrapped::report::DailyAggregate :: impl serde_core::ser::Serialize for ccwrapped::report::DailyAggregate
+item struct ccwrapped::report::DailyCost :: pub struct DailyCost { pub date: alloc::string::String, pub cost: f64, pub output_tokens: u64, pub cache_read_tokens: u64, pub cache_output_ratio: u64, pub message_count: usize, pub session_count: usize, pub models: alloc::vec::Vec<ccwrapped::report::ModelCostBreakdown>, }
+trait ccwrapped::report::DailyCost :: impl core::clone::Clone for ccwrapped::report::DailyCost
+trait ccwrapped::report::DailyCost :: impl core::default::Default for ccwrapped::report::DailyCost
+trait ccwrapped::report::DailyCost :: impl core::fmt::Debug for ccwrapped::report::DailyCost
+trait ccwrapped::report::DailyCost :: impl core::marker::Send for ccwrapped::report::DailyCost
+trait ccwrapped::report::DailyCost :: impl core::marker::Sync for ccwrapped::report::DailyCost
+trait ccwrapped::report::DailyCost :: impl core::marker::Unpin for ccwrapped::report::DailyCost
+trait ccwrapped::report::DailyCost :: impl core::panic::unwind_safe::RefUnwindSafe for ccwrapped::report::DailyCost
+trait ccwrapped::report::DailyCost :: impl core::panic::unwind_safe::UnwindSafe for ccwrapped::report::DailyCost
+trait ccwrapped::report::DailyCost :: impl serde_core::ser::Serialize for ccwrapped::report::DailyCost
+item struct ccwrapped::report::HeroStat :: pub struct HeroStat { pub label: alloc::string::String, pub value: alloc::string::String, pub note: alloc::string::String, }
+trait ccwrapped::report::HeroStat :: impl core::clone::Clone for ccwrapped::report::HeroStat
+trait ccwrapped::report::HeroStat :: impl core::default::Default for ccwrapped::report::HeroStat
+trait ccwrapped::report::HeroStat :: impl core::fmt::Debug for ccwrapped::report::HeroStat
+trait ccwrapped::report::HeroStat :: impl core::marker::Send for ccwrapped::report::HeroStat
+trait ccwrapped::report::HeroStat :: impl core::marker::Sync for ccwrapped::report::HeroStat
+trait ccwrapped::report::HeroStat :: impl core::marker::Unpin for ccwrapped::report::HeroStat
+trait ccwrapped::report::HeroStat :: impl core::panic::unwind_safe::RefUnwindSafe for ccwrapped::report::HeroStat
+trait ccwrapped::report::HeroStat :: impl core::panic::unwind_safe::UnwindSafe for ccwrapped::report::HeroStat
+trait ccwrapped::report::HeroStat :: impl serde_core::ser::Serialize for ccwrapped::report::HeroStat
+item struct ccwrapped::report::Highlight :: pub struct Highlight { pub eyebrow: alloc::string::String, pub title: alloc::string::String, pub note: alloc::string::String, }
+trait ccwrapped::report::Highlight :: impl core::clone::Clone for ccwrapped::report::Highlight
+trait ccwrapped::report::Highlight :: impl core::default::Default for ccwrapped::report::Highlight
+trait ccwrapped::report::Highlight :: impl core::fmt::Debug for ccwrapped::report::Highlight
+trait ccwrapped::report::Highlight :: impl core::marker::Send for ccwrapped::report::Highlight
+trait ccwrapped::report::Highlight :: impl core::marker::Sync for ccwrapped::report::Highlight
+trait ccwrapped::report::Highlight :: impl core::marker::Unpin for ccwrapped::report::Highlight
+trait ccwrapped::report::Highlight :: impl core::panic::unwind_safe::RefUnwindSafe for ccwrapped::report::Highlight
+trait ccwrapped::report::Highlight :: impl core::panic::unwind_safe::UnwindSafe for ccwrapped::report::Highlight
+trait ccwrapped::report::Highlight :: impl serde_core::ser::Serialize for ccwrapped::report::Highlight
+item struct ccwrapped::report::InflectionPoint :: pub struct InflectionPoint { pub date: alloc::string::String, pub before_ratio: u64, pub after_ratio: u64, pub multiplier: f64, pub direction: alloc::string::String, pub before_days: usize, pub after_days: usize, pub summary: alloc::string::String, pub secondary: core::option::Option<alloc::boxed::Box<ccwrapped::report::InflectionPoint>>, }
+trait ccwrapped::report::InflectionPoint :: impl core::clone::Clone for ccwrapped::report::InflectionPoint
+trait ccwrapped::report::InflectionPoint :: impl core::default::Default for ccwrapped::report::InflectionPoint
+trait ccwrapped::report::InflectionPoint :: impl core::fmt::Debug for ccwrapped::report::InflectionPoint
+trait ccwrapped::report::InflectionPoint :: impl core::marker::Send for ccwrapped::report::InflectionPoint
+trait ccwrapped::report::InflectionPoint :: impl core::marker::Sync for ccwrapped::report::InflectionPoint
+trait ccwrapped::report::InflectionPoint :: impl core::marker::Unpin for ccwrapped::report::InflectionPoint
+trait ccwrapped::report::InflectionPoint :: impl core::panic::unwind_safe::RefUnwindSafe for ccwrapped::report::InflectionPoint
+trait ccwrapped::report::InflectionPoint :: impl core::panic::unwind_safe::UnwindSafe for ccwrapped::report::InflectionPoint
+trait ccwrapped::report::InflectionPoint :: impl serde_core::ser::Serialize for ccwrapped::report::InflectionPoint
+item struct ccwrapped::report::ModelAggregate :: pub struct ModelAggregate { pub input_tokens: u64, pub output_tokens: u64, pub cache_creation_tokens: u64, pub cache_read_tokens: u64, pub cost: f64, pub message_count: usize, }
+method ccwrapped::report::ModelAggregate :: pub fn as_usage(&self) -> ccwrapped::report::TokenUsage
+trait ccwrapped::report::ModelAggregate :: impl core::clone::Clone for ccwrapped::report::ModelAggregate
+trait ccwrapped::report::ModelAggregate :: impl core::default::Default for ccwrapped::report::ModelAggregate
+trait ccwrapped::report::ModelAggregate :: impl core::fmt::Debug for ccwrapped::report::ModelAggregate
+trait ccwrapped::report::ModelAggregate :: impl core::marker::Send for ccwrapped::report::ModelAggregate
+trait ccwrapped::report::ModelAggregate :: impl core::marker::Sync for ccwrapped::report::ModelAggregate
+trait ccwrapped::report::ModelAggregate :: impl core::marker::Unpin for ccwrapped::report::ModelAggregate
+trait ccwrapped::report::ModelAggregate :: impl core::panic::unwind_safe::RefUnwindSafe for ccwrapped::report::ModelAggregate
+trait ccwrapped::report::ModelAggregate :: impl core::panic::unwind_safe::UnwindSafe for ccwrapped::report::ModelAggregate
+trait ccwrapped::report::ModelAggregate :: impl serde_core::ser::Serialize for ccwrapped::report::ModelAggregate
+item struct ccwrapped::report::ModelCostBreakdown :: pub struct ModelCostBreakdown { pub model: alloc::string::String, pub cost: f64, pub tokens: ccwrapped::report::CostTokens, }
+trait ccwrapped::report::ModelCostBreakdown :: impl core::clone::Clone for ccwrapped::report::ModelCostBreakdown
+trait ccwrapped::report::ModelCostBreakdown :: impl core::default::Default for ccwrapped::report::ModelCostBreakdown
+trait ccwrapped::report::ModelCostBreakdown :: impl core::fmt::Debug for ccwrapped::report::ModelCostBreakdown
+trait ccwrapped::report::ModelCostBreakdown :: impl core::marker::Send for ccwrapped::report::ModelCostBreakdown
+trait ccwrapped::report::ModelCostBreakdown :: impl core::marker::Sync for ccwrapped::report::ModelCostBreakdown
+trait ccwrapped::report::ModelCostBreakdown :: impl core::marker::Unpin for ccwrapped::report::ModelCostBreakdown
+trait ccwrapped::report::ModelCostBreakdown :: impl core::panic::unwind_safe::RefUnwindSafe for ccwrapped::report::ModelCostBreakdown
+trait ccwrapped::report::ModelCostBreakdown :: impl core::panic::unwind_safe::UnwindSafe for ccwrapped::report::ModelCostBreakdown
+trait ccwrapped::report::ModelCostBreakdown :: impl serde_core::ser::Serialize for ccwrapped::report::ModelCostBreakdown
+item struct ccwrapped::report::ModelRouting :: pub struct ModelRouting { pub available: bool, pub opus_pct: u64, pub sonnet_pct: u64, pub haiku_pct: u64, pub estimated_savings: f64, pub subagent_pct: u64, pub diversity_score: u64, pub tier_costs: alloc::collections::btree::map::BTreeMap<alloc::string::String, f64>, pub total_cost: f64, pub busiest_hour: core::option::Option<ccwrapped::report::TimeBucket>, }
+trait ccwrapped::report::ModelRouting :: impl core::clone::Clone for ccwrapped::report::ModelRouting
+trait ccwrapped::report::ModelRouting :: impl core::default::Default for ccwrapped::report::ModelRouting
+trait ccwrapped::report::ModelRouting :: impl core::fmt::Debug for ccwrapped::report::ModelRouting
+trait ccwrapped::report::ModelRouting :: impl core::marker::Send for ccwrapped::report::ModelRouting
+trait ccwrapped::report::ModelRouting :: impl core::marker::Sync for ccwrapped::report::ModelRouting
+trait ccwrapped::report::ModelRouting :: impl core::marker::Unpin for ccwrapped::report::ModelRouting
+trait ccwrapped::report::ModelRouting :: impl core::panic::unwind_safe::RefUnwindSafe for ccwrapped::report::ModelRouting
+trait ccwrapped::report::ModelRouting :: impl core::panic::unwind_safe::UnwindSafe for ccwrapped::report::ModelRouting
+trait ccwrapped::report::ModelRouting :: impl serde_core::ser::Serialize for ccwrapped::report::ModelRouting
+item struct ccwrapped::report::NamedCount :: pub struct NamedCount { pub label: alloc::string::String, pub count: usize, }
+trait ccwrapped::report::NamedCount :: impl core::clone::Clone for ccwrapped::report::NamedCount
+trait ccwrapped::report::NamedCount :: impl core::default::Default for ccwrapped::report::NamedCount
+trait ccwrapped::report::NamedCount :: impl core::fmt::Debug for ccwrapped::report::NamedCount
+trait ccwrapped::report::NamedCount :: impl core::marker::Send for ccwrapped::report::NamedCount
+trait ccwrapped::report::NamedCount :: impl core::marker::Sync for ccwrapped::report::NamedCount
+trait ccwrapped::report::NamedCount :: impl core::marker::Unpin for ccwrapped::report::NamedCount
+trait ccwrapped::report::NamedCount :: impl core::panic::unwind_safe::RefUnwindSafe for ccwrapped::report::NamedCount
+trait ccwrapped::report::NamedCount :: impl core::panic::unwind_safe::UnwindSafe for ccwrapped::report::NamedCount
+trait ccwrapped::report::NamedCount :: impl serde_core::ser::Serialize for ccwrapped::report::NamedCount
+item struct ccwrapped::report::ProjectSummary :: pub struct ProjectSummary { pub hash: alloc::string::String, pub path: core::option::Option<alloc::string::String>, pub name: alloc::string::String, pub input_tokens: u64, pub output_tokens: u64, pub cache_creation_tokens: u64, pub cache_read_tokens: u64, pub message_count: usize, pub session_count: usize, pub subagent_session_count: usize, pub first_seen: core::option::Option<alloc::string::String>, pub last_seen: core::option::Option<alloc::string::String>, }
+trait ccwrapped::report::ProjectSummary :: impl core::clone::Clone for ccwrapped::report::ProjectSummary
+trait ccwrapped::report::ProjectSummary :: impl core::default::Default for ccwrapped::report::ProjectSummary
+trait ccwrapped::report::ProjectSummary :: impl core::fmt::Debug for ccwrapped::report::ProjectSummary
+trait ccwrapped::report::ProjectSummary :: impl core::marker::Send for ccwrapped::report::ProjectSummary
+trait ccwrapped::report::ProjectSummary :: impl core::marker::Sync for ccwrapped::report::ProjectSummary
+trait ccwrapped::report::ProjectSummary :: impl core::marker::Unpin for ccwrapped::report::ProjectSummary
+trait ccwrapped::report::ProjectSummary :: impl core::panic::unwind_safe::RefUnwindSafe for ccwrapped::report::ProjectSummary
+trait ccwrapped::report::ProjectSummary :: impl core::panic::unwind_safe::UnwindSafe for ccwrapped::report::ProjectSummary
+trait ccwrapped::report::ProjectSummary :: impl serde_core::ser::Serialize for ccwrapped::report::ProjectSummary
+item struct ccwrapped::report::PromptRatio :: pub struct PromptRatio { pub human: usize, pub tool: usize, pub total: usize, pub human_pct: u64, }
+trait ccwrapped::report::PromptRatio :: impl core::clone::Clone for ccwrapped::report::PromptRatio
+trait ccwrapped::report::PromptRatio :: impl core::default::Default for ccwrapped::report::PromptRatio
+trait ccwrapped::report::PromptRatio :: impl core::fmt::Debug for ccwrapped::report::PromptRatio
+trait ccwrapped::report::PromptRatio :: impl core::marker::Send for ccwrapped::report::PromptRatio
+trait ccwrapped::report::PromptRatio :: impl core::marker::Sync for ccwrapped::report::PromptRatio
+trait ccwrapped::report::PromptRatio :: impl core::marker::Unpin for ccwrapped::report::PromptRatio
+trait ccwrapped::report::PromptRatio :: impl core::panic::unwind_safe::RefUnwindSafe for ccwrapped::report::PromptRatio
+trait ccwrapped::report::PromptRatio :: impl core::panic::unwind_safe::UnwindSafe for ccwrapped::report::PromptRatio
+trait ccwrapped::report::PromptRatio :: impl serde_core::ser::Serialize for ccwrapped::report::PromptRatio
+item struct ccwrapped::report::Recommendation :: pub struct Recommendation { pub severity: alloc::string::String, pub title: alloc::string::String, pub savings: alloc::string::String, pub action: alloc::string::String, }
+trait ccwrapped::report::Recommendation :: impl core::clone::Clone for ccwrapped::report::Recommendation
+trait ccwrapped::report::Recommendation :: impl core::default::Default for ccwrapped::report::Recommendation
+trait ccwrapped::report::Recommendation :: impl core::fmt::Debug for ccwrapped::report::Recommendation
+trait ccwrapped::report::Recommendation :: impl core::marker::Send for ccwrapped::report::Recommendation
+trait ccwrapped::report::Recommendation :: impl core::marker::Sync for ccwrapped::report::Recommendation
+trait ccwrapped::report::Recommendation :: impl core::marker::Unpin for ccwrapped::report::Recommendation
+trait ccwrapped::report::Recommendation :: impl core::panic::unwind_safe::RefUnwindSafe for ccwrapped::report::Recommendation
+trait ccwrapped::report::Recommendation :: impl core::panic::unwind_safe::UnwindSafe for ccwrapped::report::Recommendation
+trait ccwrapped::report::Recommendation :: impl serde_core::ser::Serialize for ccwrapped::report::Recommendation
+item struct ccwrapped::report::Report :: pub struct Report { pub generated_at: alloc::string::String, pub year: i32, pub cost_analysis: ccwrapped::report::CostAnalysis, pub cache_health: ccwrapped::report::CacheHealth, pub anomalies: ccwrapped::report::AnomalyReport, pub inflection: core::option::Option<ccwrapped::report::InflectionPoint>, pub session_intel: ccwrapped::report::SessionIntel, pub session_breakdown: ccwrapped::report::SessionBreakdown, pub model_routing: ccwrapped::report::ModelRouting, pub project_breakdown: alloc::vec::Vec<ccwrapped::report::ProjectSummary>, pub recommendations: alloc::vec::Vec<ccwrapped::report::Recommendation>, pub wrapped_story: ccwrapped::report::WrappedStory, }
+trait ccwrapped::report::Report :: impl core::clone::Clone for ccwrapped::report::Report
+trait ccwrapped::report::Report :: impl core::default::Default for ccwrapped::report::Report
+trait ccwrapped::report::Report :: impl core::fmt::Debug for ccwrapped::report::Report
+trait ccwrapped::report::Report :: impl core::marker::Send for ccwrapped::report::Report
+trait ccwrapped::report::Report :: impl core::marker::Sync for ccwrapped::report::Report
+trait ccwrapped::report::Report :: impl core::marker::Unpin for ccwrapped::report::Report
+trait ccwrapped::report::Report :: impl core::panic::unwind_safe::RefUnwindSafe for ccwrapped::report::Report
+trait ccwrapped::report::Report :: impl core::panic::unwind_safe::UnwindSafe for ccwrapped::report::Report
+trait ccwrapped::report::Report :: impl serde_core::ser::Serialize for ccwrapped::report::Report
+item struct ccwrapped::report::SessionBreakdown :: pub struct SessionBreakdown { pub sessions: alloc::vec::Vec<ccwrapped::report::SessionSummary>, pub costly_subagents: alloc::vec::Vec<ccwrapped::report::SubagentSummary>, pub total_subagent_sessions: usize, pub total_subagent_tokens: u64, }
+trait ccwrapped::report::SessionBreakdown :: impl core::clone::Clone for ccwrapped::report::SessionBreakdown
+trait ccwrapped::report::SessionBreakdown :: impl core::default::Default for ccwrapped::report::SessionBreakdown
+trait ccwrapped::report::SessionBreakdown :: impl core::fmt::Debug for ccwrapped::report::SessionBreakdown
+trait ccwrapped::report::SessionBreakdown :: impl core::marker::Send for ccwrapped::report::SessionBreakdown
+trait ccwrapped::report::SessionBreakdown :: impl core::marker::Sync for ccwrapped::report::SessionBreakdown
+trait ccwrapped::report::SessionBreakdown :: impl core::marker::Unpin for ccwrapped::report::SessionBreakdown
+trait ccwrapped::report::SessionBreakdown :: impl core::panic::unwind_safe::RefUnwindSafe for ccwrapped::report::SessionBreakdown
+trait ccwrapped::report::SessionBreakdown :: impl core::panic::unwind_safe::UnwindSafe for ccwrapped::report::SessionBreakdown
+trait ccwrapped::report::SessionBreakdown :: impl serde_core::ser::Serialize for ccwrapped::report::SessionBreakdown
+item struct ccwrapped::report::SessionCostStats :: pub struct SessionCostStats { pub total: usize, pub total_duration_minutes: u64, pub avg_duration_minutes: u64, pub longest_session_id: core::option::Option<alloc::string::String>, pub longest_session_project: core::option::Option<alloc::string::String>, pub longest_session_minutes: u64, }
+trait ccwrapped::report::SessionCostStats :: impl core::clone::Clone for ccwrapped::report::SessionCostStats
+trait ccwrapped::report::SessionCostStats :: impl core::default::Default for ccwrapped::report::SessionCostStats
+trait ccwrapped::report::SessionCostStats :: impl core::fmt::Debug for ccwrapped::report::SessionCostStats
+trait ccwrapped::report::SessionCostStats :: impl core::marker::Send for ccwrapped::report::SessionCostStats
+trait ccwrapped::report::SessionCostStats :: impl core::marker::Sync for ccwrapped::report::SessionCostStats
+trait ccwrapped::report::SessionCostStats :: impl core::marker::Unpin for ccwrapped::report::SessionCostStats
+trait ccwrapped::report::SessionCostStats :: impl core::panic::unwind_safe::RefUnwindSafe for ccwrapped::report::SessionCostStats
+trait ccwrapped::report::SessionCostStats :: impl core::panic::unwind_safe::UnwindSafe for ccwrapped::report::SessionCostStats
+trait ccwrapped::report::SessionCostStats :: impl serde_core::ser::Serialize for ccwrapped::report::SessionCostStats
+item struct ccwrapped::report::SessionIntel :: pub struct SessionIntel { pub available: bool, pub total_sessions: usize, pub total_minutes: u64, pub avg_duration: u64, pub median_duration: u64, pub p90_duration: u64, pub max_duration: u64, pub longest_session_project: core::option::Option<alloc::string::String>, pub long_sessions: usize, pub long_session_pct: u64, pub avg_tool_messages_per_session: u64, pub avg_messages_per_session: u64, pub top_tools: alloc::vec::Vec<ccwrapped::report::ToolCount>, pub peak_hours: alloc::vec::Vec<ccwrapped::report::TimeBucket>, pub peak_overlap_pct: u64, pub hour_distribution: alloc::vec::Vec<usize>, }
+trait ccwrapped::report::SessionIntel :: impl core::clone::Clone for ccwrapped::report::SessionIntel
+trait ccwrapped::report::SessionIntel :: impl core::default::Default for ccwrapped::report::SessionIntel
+trait ccwrapped::report::SessionIntel :: impl core::fmt::Debug for ccwrapped::report::SessionIntel
+trait ccwrapped::report::SessionIntel :: impl core::marker::Send for ccwrapped::report::SessionIntel
+trait ccwrapped::report::SessionIntel :: impl core::marker::Sync for ccwrapped::report::SessionIntel
+trait ccwrapped::report::SessionIntel :: impl core::marker::Unpin for ccwrapped::report::SessionIntel
+trait ccwrapped::report::SessionIntel :: impl core::panic::unwind_safe::RefUnwindSafe for ccwrapped::report::SessionIntel
+trait ccwrapped::report::SessionIntel :: impl core::panic::unwind_safe::UnwindSafe for ccwrapped::report::SessionIntel
+trait ccwrapped::report::SessionIntel :: impl serde_core::ser::Serialize for ccwrapped::report::SessionIntel
+item struct ccwrapped::report::SessionPrompt :: pub struct SessionPrompt { pub text: alloc::string::String, pub timestamp: core::option::Option<alloc::string::String>, pub entrypoint: core::option::Option<alloc::string::String>, }
+trait ccwrapped::report::SessionPrompt :: impl core::clone::Clone for ccwrapped::report::SessionPrompt
+trait ccwrapped::report::SessionPrompt :: impl core::default::Default for ccwrapped::report::SessionPrompt
+trait ccwrapped::report::SessionPrompt :: impl core::fmt::Debug for ccwrapped::report::SessionPrompt
+trait ccwrapped::report::SessionPrompt :: impl core::marker::Send for ccwrapped::report::SessionPrompt
+trait ccwrapped::report::SessionPrompt :: impl core::marker::Sync for ccwrapped::report::SessionPrompt
+trait ccwrapped::report::SessionPrompt :: impl core::marker::Unpin for ccwrapped::report::SessionPrompt
+trait ccwrapped::report::SessionPrompt :: impl core::panic::unwind_safe::RefUnwindSafe for ccwrapped::report::SessionPrompt
+trait ccwrapped::report::SessionPrompt :: impl core::panic::unwind_safe::UnwindSafe for ccwrapped::report::SessionPrompt
+trait ccwrapped::report::SessionPrompt :: impl serde_core::ser::Serialize for ccwrapped::report::SessionPrompt
+item struct ccwrapped::report::SessionSummary :: pub struct SessionSummary { pub session_id: alloc::string::String, pub project_hash: alloc::string::String, pub project_path: core::option::Option<alloc::string::String>, pub project_name: alloc::string::String, pub timestamp_start: core::option::Option<alloc::string::String>, pub timestamp_end: core::option::Option<alloc::string::String>, pub duration_minutes: u64, pub usage: ccwrapped::report::TokenUsage, pub model_totals: alloc::collections::btree::map::BTreeMap<alloc::string::String, ccwrapped::report::TokenUsage>, pub total_tokens: u64, pub cost_usd: f64, pub prompt_count: usize, pub tool_message_count: usize, pub first_prompt: core::option::Option<alloc::string::String>, pub prompts: alloc::vec::Vec<ccwrapped::report::SessionPrompt>, pub subagents: alloc::vec::Vec<ccwrapped::report::SubagentSummary>, }
+trait ccwrapped::report::SessionSummary :: impl core::clone::Clone for ccwrapped::report::SessionSummary
+trait ccwrapped::report::SessionSummary :: impl core::default::Default for ccwrapped::report::SessionSummary
+trait ccwrapped::report::SessionSummary :: impl core::fmt::Debug for ccwrapped::report::SessionSummary
+trait ccwrapped::report::SessionSummary :: impl core::marker::Send for ccwrapped::report::SessionSummary
+trait ccwrapped::report::SessionSummary :: impl core::marker::Sync for ccwrapped::report::SessionSummary
+trait ccwrapped::report::SessionSummary :: impl core::marker::Unpin for ccwrapped::report::SessionSummary
+trait ccwrapped::report::SessionSummary :: impl core::panic::unwind_safe::RefUnwindSafe for ccwrapped::report::SessionSummary
+trait ccwrapped::report::SessionSummary :: impl core::panic::unwind_safe::UnwindSafe for ccwrapped::report::SessionSummary
+trait ccwrapped::report::SessionSummary :: impl serde_core::ser::Serialize for ccwrapped::report::SessionSummary
+item struct ccwrapped::report::StoryCard :: pub struct StoryCard { pub title: alloc::string::String, pub note: alloc::string::String, }
+trait ccwrapped::report::StoryCard :: impl core::clone::Clone for ccwrapped::report::StoryCard
+trait ccwrapped::report::StoryCard :: impl core::default::Default for ccwrapped::report::StoryCard
+trait ccwrapped::report::StoryCard :: impl core::fmt::Debug for ccwrapped::report::StoryCard
+trait ccwrapped::report::StoryCard :: impl core::marker::Send for ccwrapped::report::StoryCard
+trait ccwrapped::report::StoryCard :: impl core::marker::Sync for ccwrapped::report::StoryCard
+trait ccwrapped::report::StoryCard :: impl core::marker::Unpin for ccwrapped::report::StoryCard
+trait ccwrapped::report::StoryCard :: impl core::panic::unwind_safe::RefUnwindSafe for ccwrapped::report::StoryCard
+trait ccwrapped::report::StoryCard :: impl core::panic::unwind_safe::UnwindSafe for ccwrapped::report::StoryCard
+trait ccwrapped::report::StoryCard :: impl serde_core::ser::Serialize for ccwrapped::report::StoryCard
+item struct ccwrapped::report::SubagentSummary :: pub struct SubagentSummary { pub session_id: alloc::string::String, pub timestamp_start: core::option::Option<alloc::string::String>, pub duration_minutes: u64, pub total_tokens: u64, pub usage: ccwrapped::report::TokenUsage, pub first_prompt: core::option::Option<alloc::string::String>, pub project_path: core::option::Option<alloc::string::String>, pub project_name: core::option::Option<alloc::string::String>, pub parent_session_id: core::option::Option<alloc::string::String>, }
+trait ccwrapped::report::SubagentSummary :: impl core::clone::Clone for ccwrapped::report::SubagentSummary
+trait ccwrapped::report::SubagentSummary :: impl core::default::Default for ccwrapped::report::SubagentSummary
+trait ccwrapped::report::SubagentSummary :: impl core::fmt::Debug for ccwrapped::report::SubagentSummary
+trait ccwrapped::report::SubagentSummary :: impl core::marker::Send for ccwrapped::report::SubagentSummary
+trait ccwrapped::report::SubagentSummary :: impl core::marker::Sync for ccwrapped::report::SubagentSummary
+trait ccwrapped::report::SubagentSummary :: impl core::marker::Unpin for ccwrapped::report::SubagentSummary
+trait ccwrapped::report::SubagentSummary :: impl core::panic::unwind_safe::RefUnwindSafe for ccwrapped::report::SubagentSummary
+trait ccwrapped::report::SubagentSummary :: impl core::panic::unwind_safe::UnwindSafe for ccwrapped::report::SubagentSummary
+trait ccwrapped::report::SubagentSummary :: impl serde_core::ser::Serialize for ccwrapped::report::SubagentSummary
+item struct ccwrapped::report::TimeBucket :: pub struct TimeBucket { pub hour: u8, pub label: alloc::string::String, pub count: usize, pub share_pct: u64, }
+trait ccwrapped::report::TimeBucket :: impl core::clone::Clone for ccwrapped::report::TimeBucket
+trait ccwrapped::report::TimeBucket :: impl core::default::Default for ccwrapped::report::TimeBucket
+trait ccwrapped::report::TimeBucket :: impl core::fmt::Debug for ccwrapped::report::TimeBucket
+trait ccwrapped::report::TimeBucket :: impl core::marker::Send for ccwrapped::report::TimeBucket
+trait ccwrapped::report::TimeBucket :: impl core::marker::Sync for ccwrapped::report::TimeBucket
+trait ccwrapped::report::TimeBucket :: impl core::marker::Unpin for ccwrapped::report::TimeBucket
+trait ccwrapped::report::TimeBucket :: impl core::panic::unwind_safe::RefUnwindSafe for ccwrapped::report::TimeBucket
+trait ccwrapped::report::TimeBucket :: impl core::panic::unwind_safe::UnwindSafe for ccwrapped::report::TimeBucket
+trait ccwrapped::report::TimeBucket :: impl serde_core::ser::Serialize for ccwrapped::report::TimeBucket
+item struct ccwrapped::report::TokenUsage :: pub struct TokenUsage { pub input_tokens: u64, pub output_tokens: u64, pub cache_creation_tokens: u64, pub cache_read_tokens: u64, }
+method ccwrapped::report::TokenUsage :: pub fn total_tokens(&self) -> u64
+trait ccwrapped::report::TokenUsage :: impl core::clone::Clone for ccwrapped::report::TokenUsage
+trait ccwrapped::report::TokenUsage :: impl core::default::Default for ccwrapped::report::TokenUsage
+trait ccwrapped::report::TokenUsage :: impl core::fmt::Debug for ccwrapped::report::TokenUsage
+trait ccwrapped::report::TokenUsage :: impl core::marker::Send for ccwrapped::report::TokenUsage
+trait ccwrapped::report::TokenUsage :: impl core::marker::Sync for ccwrapped::report::TokenUsage
+trait ccwrapped::report::TokenUsage :: impl core::marker::Unpin for ccwrapped::report::TokenUsage
+trait ccwrapped::report::TokenUsage :: impl core::ops::arith::AddAssign<&ccwrapped::report::TokenUsage> for ccwrapped::report::TokenUsage
+trait ccwrapped::report::TokenUsage :: impl core::panic::unwind_safe::RefUnwindSafe for ccwrapped::report::TokenUsage
+trait ccwrapped::report::TokenUsage :: impl core::panic::unwind_safe::UnwindSafe for ccwrapped::report::TokenUsage
+trait ccwrapped::report::TokenUsage :: impl serde_core::ser::Serialize for ccwrapped::report::TokenUsage
+item struct ccwrapped::report::ToolCount :: pub struct ToolCount { pub name: alloc::string::String, pub count: usize, }
+trait ccwrapped::report::ToolCount :: impl core::clone::Clone for ccwrapped::report::ToolCount
+trait ccwrapped::report::ToolCount :: impl core::default::Default for ccwrapped::report::ToolCount
+trait ccwrapped::report::ToolCount :: impl core::fmt::Debug for ccwrapped::report::ToolCount
+trait ccwrapped::report::ToolCount :: impl core::marker::Send for ccwrapped::report::ToolCount
+trait ccwrapped::report::ToolCount :: impl core::marker::Sync for ccwrapped::report::ToolCount
+trait ccwrapped::report::ToolCount :: impl core::marker::Unpin for ccwrapped::report::ToolCount
+trait ccwrapped::report::ToolCount :: impl core::panic::unwind_safe::RefUnwindSafe for ccwrapped::report::ToolCount
+trait ccwrapped::report::ToolCount :: impl core::panic::unwind_safe::UnwindSafe for ccwrapped::report::ToolCount
+trait ccwrapped::report::ToolCount :: impl serde_core::ser::Serialize for ccwrapped::report::ToolCount
+item struct ccwrapped::report::TopProject :: pub struct TopProject { pub name: alloc::string::String, pub path: core::option::Option<alloc::string::String>, pub share_pct: u64, pub session_count: usize, pub output_tokens: u64, }
+trait ccwrapped::report::TopProject :: impl core::clone::Clone for ccwrapped::report::TopProject
+trait ccwrapped::report::TopProject :: impl core::default::Default for ccwrapped::report::TopProject
+trait ccwrapped::report::TopProject :: impl core::fmt::Debug for ccwrapped::report::TopProject
+trait ccwrapped::report::TopProject :: impl core::marker::Send for ccwrapped::report::TopProject
+trait ccwrapped::report::TopProject :: impl core::marker::Sync for ccwrapped::report::TopProject
+trait ccwrapped::report::TopProject :: impl core::marker::Unpin for ccwrapped::report::TopProject
+trait ccwrapped::report::TopProject :: impl core::panic::unwind_safe::RefUnwindSafe for ccwrapped::report::TopProject
+trait ccwrapped::report::TopProject :: impl core::panic::unwind_safe::UnwindSafe for ccwrapped::report::TopProject
+trait ccwrapped::report::TopProject :: impl serde_core::ser::Serialize for ccwrapped::report::TopProject
+item struct ccwrapped::report::TopTool :: pub struct TopTool { pub name: alloc::string::String, pub count: usize, }
+trait ccwrapped::report::TopTool :: impl core::clone::Clone for ccwrapped::report::TopTool
+trait ccwrapped::report::TopTool :: impl core::default::Default for ccwrapped::report::TopTool
+trait ccwrapped::report::TopTool :: impl core::fmt::Debug for ccwrapped::report::TopTool
+trait ccwrapped::report::TopTool :: impl core::marker::Send for ccwrapped::report::TopTool
+trait ccwrapped::report::TopTool :: impl core::marker::Sync for ccwrapped::report::TopTool
+trait ccwrapped::report::TopTool :: impl core::marker::Unpin for ccwrapped::report::TopTool
+trait ccwrapped::report::TopTool :: impl core::panic::unwind_safe::RefUnwindSafe for ccwrapped::report::TopTool
+trait ccwrapped::report::TopTool :: impl core::panic::unwind_safe::UnwindSafe for ccwrapped::report::TopTool
+trait ccwrapped::report::TopTool :: impl serde_core::ser::Serialize for ccwrapped::report::TopTool
+item struct ccwrapped::report::WrappedStory :: pub struct WrappedStory { pub summary: alloc::string::String, pub hero: alloc::vec::Vec<ccwrapped::report::HeroStat>, pub highlights: alloc::vec::Vec<ccwrapped::report::Highlight>, pub archetype: ccwrapped::report::StoryCard, pub cache_mood: ccwrapped::report::CacheMood, pub momentum: ccwrapped::report::StoryCard, pub power_hour: core::option::Option<ccwrapped::report::TimeBucket>, pub favorite_weekday: core::option::Option<ccwrapped::report::NamedCount>, pub total_messages: usize, pub total_tokens: u64, pub average_messages_per_active_day: u64, pub longest_streak: u64, pub top_tool: core::option::Option<ccwrapped::report::TopTool>, pub top_project: core::option::Option<ccwrapped::report::TopProject>, pub biggest_session: core::option::Option<ccwrapped::report::SessionSummary>, pub biggest_session_by_cost: core::option::Option<ccwrapped::report::SessionSummary>, pub biggest_session_by_tokens: core::option::Option<ccwrapped::report::SessionSummary>, pub biggest_subagent: core::option::Option<ccwrapped::report::SubagentSummary>, pub prompt_ratio: ccwrapped::report::PromptRatio, pub next_move: core::option::Option<ccwrapped::report::Recommendation>, pub share_text: alloc::string::String, }
+trait ccwrapped::report::WrappedStory :: impl core::clone::Clone for ccwrapped::report::WrappedStory
+trait ccwrapped::report::WrappedStory :: impl core::default::Default for ccwrapped::report::WrappedStory
+trait ccwrapped::report::WrappedStory :: impl core::fmt::Debug for ccwrapped::report::WrappedStory
+trait ccwrapped::report::WrappedStory :: impl core::marker::Send for ccwrapped::report::WrappedStory
+trait ccwrapped::report::WrappedStory :: impl core::marker::Sync for ccwrapped::report::WrappedStory
+trait ccwrapped::report::WrappedStory :: impl core::marker::Unpin for ccwrapped::report::WrappedStory
+trait ccwrapped::report::WrappedStory :: impl core::panic::unwind_safe::RefUnwindSafe for ccwrapped::report::WrappedStory
+trait ccwrapped::report::WrappedStory :: impl core::panic::unwind_safe::UnwindSafe for ccwrapped::report::WrappedStory
+trait ccwrapped::report::WrappedStory :: impl serde_core::ser::Serialize for ccwrapped::report::WrappedStory

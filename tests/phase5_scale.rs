@@ -26,9 +26,10 @@ impl Scratch {
             .as_nanos();
         let id = NEXT_TEMP_ID.fetch_add(1, Ordering::Relaxed);
         #[cfg(windows)]
-        let base = std::env::var_os("USERPROFILE")
+        let base = std::env::var_os("CCWRAPPED_WINDOWS_TEST_ROOT")
+            .or_else(|| std::env::var_os("USERPROFILE"))
             .map(PathBuf::from)
-            .expect("Windows store tests require USERPROFILE");
+            .expect("Windows store tests require a test root or USERPROFILE");
         #[cfg(not(windows))]
         let base = std::env::temp_dir();
         let path = base.join(format!(

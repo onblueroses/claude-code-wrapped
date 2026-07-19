@@ -27,9 +27,10 @@ impl TestWorkspace {
             .as_nanos();
         let sequence = TEMP_SEQUENCE.fetch_add(1, Ordering::Relaxed);
         #[cfg(windows)]
-        let base = std::env::var_os("USERPROFILE")
+        let base = std::env::var_os("CCWRAPPED_WINDOWS_TEST_ROOT")
+            .or_else(|| std::env::var_os("USERPROFILE"))
             .map(PathBuf::from)
-            .expect("Windows product tests require USERPROFILE");
+            .expect("Windows product tests require a test root or USERPROFILE");
         #[cfg(not(windows))]
         let base = std::env::temp_dir();
         let root = base.join(format!(

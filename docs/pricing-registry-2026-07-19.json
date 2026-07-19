@@ -1,0 +1,384 @@
+{
+  "schemaVersion": "ccwrapped.pricing-evidence/v1",
+  "registryVersion": "anthropic-api-2026-07-19",
+  "accessDate": "2026-07-19",
+  "selectionPolicy": "pricing/exact-provider-model-interval-modifier/v1",
+  "scope": "Anthropic-operated first-party API, global inference, standard speed, non-batch requests",
+  "sources": {
+    "pricing": {
+      "url": "https://platform.claude.com/docs/en/about-claude/pricing",
+      "accessDate": "2026-07-19",
+      "locators": [
+        "Model pricing table",
+        "Prompt caching multipliers",
+        "Claude Sonnet 5 introductory-pricing note"
+      ]
+    },
+    "modelIds": {
+      "url": "https://platform.claude.com/docs/en/about-claude/models/model-ids-and-versions",
+      "accessDate": "2026-07-19",
+      "locators": [
+        "The 4.6 generation and later",
+        "Before the 4.6 generation",
+        "Dateless IDs are pinned snapshots"
+      ]
+    },
+    "releaseNotes": {
+      "url": "https://platform.claude.com/docs/en/release-notes/overview",
+      "accessDate": "2026-07-19",
+      "locators": [
+        "November 4, 2024",
+        "May 22, 2025",
+        "August 5, 2025",
+        "September 29, 2025",
+        "October 15, 2025",
+        "November 24, 2025",
+        "February 5, 2026",
+        "February 17, 2026",
+        "April 16, 2026",
+        "May 28, 2026",
+        "June 9, 2026",
+        "June 15, 2026",
+        "June 30, 2026",
+        "July 1, 2026"
+      ]
+    },
+    "deprecations": {
+      "url": "https://platform.claude.com/docs/en/about-claude/model-deprecations",
+      "accessDate": "2026-07-19",
+      "locators": [
+        "Model status",
+        "Claude Opus 4.1 retirement",
+        "Claude Sonnet 4 and Claude Opus 4 retirement",
+        "Claude Haiku 3.5 retirement"
+      ]
+    },
+    "fableRedeployment": {
+      "url": "https://www.anthropic.com/news/redeploying-fable-5",
+      "accessDate": "2026-07-19",
+      "locators": [
+        "June 12 suspension",
+        "June 30 export-control update",
+        "July 1 restoration"
+      ]
+    }
+  },
+  "records": [
+    {
+      "provider": "anthropic-api",
+      "canonicalModel": "claude-fable-5",
+      "aliases": ["claude-fable-5"],
+      "effectiveStart": "2026-06-09",
+      "effectiveEnd": "2026-06-11",
+      "modifier": "standard",
+      "inputPicoUsdPerToken": 10000000,
+      "outputPicoUsdPerToken": 50000000,
+      "cacheReadPicoUsdPerToken": 1000000,
+      "cacheWrite5mPicoUsdPerToken": 12500000,
+      "cacheWrite1hPicoUsdPerToken": 20000000,
+      "sourceRefs": [
+        "pricing#Claude Fable 5 row and prompt-caching multipliers",
+        "releaseNotes#June 9 launch",
+        "fableRedeployment#June 12 suspension"
+      ]
+    },
+    {
+      "provider": "anthropic-api",
+      "canonicalModel": "claude-fable-5",
+      "aliases": ["claude-fable-5"],
+      "effectiveStart": "2026-07-01",
+      "effectiveEnd": null,
+      "modifier": "standard",
+      "inputPicoUsdPerToken": 10000000,
+      "outputPicoUsdPerToken": 50000000,
+      "cacheReadPicoUsdPerToken": 1000000,
+      "cacheWrite5mPicoUsdPerToken": 12500000,
+      "cacheWrite1hPicoUsdPerToken": 20000000,
+      "sourceRefs": [
+        "pricing#Claude Fable 5 row and prompt-caching multipliers",
+        "releaseNotes#July 1 restoration",
+        "fableRedeployment#July 1 restoration"
+      ]
+    },
+    {
+      "provider": "anthropic-api",
+      "canonicalModel": "claude-haiku-3-5",
+      "aliases": [
+        "claude-3-5-haiku-latest",
+        "claude-3-5-haiku-20241022"
+      ],
+      "effectiveStart": "2024-11-04",
+      "effectiveEnd": "2026-02-18",
+      "modifier": "standard",
+      "inputPicoUsdPerToken": 800000,
+      "outputPicoUsdPerToken": 4000000,
+      "cacheReadPicoUsdPerToken": 80000,
+      "cacheWrite5mPicoUsdPerToken": 1000000,
+      "cacheWrite1hPicoUsdPerToken": 1600000,
+      "sourceRefs": [
+        "pricing#Claude Haiku 3.5 row and prompt-caching multipliers",
+        "releaseNotes#November 4 API availability",
+        "deprecations#February 19 retirement and exact pinned ID"
+      ]
+    },
+    {
+      "provider": "anthropic-api",
+      "canonicalModel": "claude-haiku-4-5",
+      "aliases": ["claude-haiku-4-5", "claude-haiku-4-5-20251001"],
+      "effectiveStart": "2025-10-15",
+      "effectiveEnd": null,
+      "modifier": "standard",
+      "inputPicoUsdPerToken": 1000000,
+      "outputPicoUsdPerToken": 5000000,
+      "cacheReadPicoUsdPerToken": 100000,
+      "cacheWrite5mPicoUsdPerToken": 1250000,
+      "cacheWrite1hPicoUsdPerToken": 2000000,
+      "sourceRefs": [
+        "pricing#Claude Haiku 4.5 row and prompt-caching multipliers",
+        "modelIds#Dated snapshot and convenience-alias rules",
+        "releaseNotes#October 15 launch"
+      ]
+    },
+    {
+      "provider": "anthropic-api",
+      "canonicalModel": "claude-mythos-5",
+      "aliases": ["claude-mythos-5"],
+      "effectiveStart": "2026-06-09",
+      "effectiveEnd": "2026-06-11",
+      "modifier": "standard",
+      "inputPicoUsdPerToken": 10000000,
+      "outputPicoUsdPerToken": 50000000,
+      "cacheReadPicoUsdPerToken": 1000000,
+      "cacheWrite5mPicoUsdPerToken": 12500000,
+      "cacheWrite1hPicoUsdPerToken": 20000000,
+      "sourceRefs": [
+        "pricing#Claude Mythos 5 row and prompt-caching multipliers",
+        "releaseNotes#June 9 limited-availability launch",
+        "fableRedeployment#June 12 suspension"
+      ]
+    },
+    {
+      "provider": "anthropic-api",
+      "canonicalModel": "claude-mythos-5",
+      "aliases": ["claude-mythos-5"],
+      "effectiveStart": "2026-07-01",
+      "effectiveEnd": null,
+      "modifier": "standard",
+      "inputPicoUsdPerToken": 10000000,
+      "outputPicoUsdPerToken": 50000000,
+      "cacheReadPicoUsdPerToken": 1000000,
+      "cacheWrite5mPicoUsdPerToken": 12500000,
+      "cacheWrite1hPicoUsdPerToken": 20000000,
+      "sourceRefs": [
+        "pricing#Claude Mythos 5 row and prompt-caching multipliers",
+        "releaseNotes#July 1 restoration",
+        "fableRedeployment#Restored limited access by the dated update"
+      ]
+    },
+    {
+      "provider": "anthropic-api",
+      "canonicalModel": "claude-opus-4",
+      "aliases": ["claude-opus-4-20250514"],
+      "effectiveStart": "2025-05-22",
+      "effectiveEnd": "2026-06-14",
+      "modifier": "standard",
+      "inputPicoUsdPerToken": 15000000,
+      "outputPicoUsdPerToken": 75000000,
+      "cacheReadPicoUsdPerToken": 1500000,
+      "cacheWrite5mPicoUsdPerToken": 18750000,
+      "cacheWrite1hPicoUsdPerToken": 30000000,
+      "sourceRefs": [
+        "pricing#Claude Opus 4 row and prompt-caching multipliers",
+        "releaseNotes#May 22 launch and June 15 retirement",
+        "deprecations#Exact pinned ID and June 15 retirement"
+      ]
+    },
+    {
+      "provider": "anthropic-api",
+      "canonicalModel": "claude-opus-4-1",
+      "aliases": ["claude-opus-4-1", "claude-opus-4-1-20250805"],
+      "effectiveStart": "2025-08-05",
+      "effectiveEnd": "2026-08-04",
+      "modifier": "standard",
+      "inputPicoUsdPerToken": 15000000,
+      "outputPicoUsdPerToken": 75000000,
+      "cacheReadPicoUsdPerToken": 1500000,
+      "cacheWrite5mPicoUsdPerToken": 18750000,
+      "cacheWrite1hPicoUsdPerToken": 30000000,
+      "sourceRefs": [
+        "pricing#Claude Opus 4.1 row and prompt-caching multipliers",
+        "releaseNotes#August 5 launch",
+        "deprecations#Exact pinned ID and August 5 retirement"
+      ]
+    },
+    {
+      "provider": "anthropic-api",
+      "canonicalModel": "claude-opus-4-5",
+      "aliases": ["claude-opus-4-5", "claude-opus-4-5-20251101"],
+      "effectiveStart": "2025-11-24",
+      "effectiveEnd": null,
+      "modifier": "standard",
+      "inputPicoUsdPerToken": 5000000,
+      "outputPicoUsdPerToken": 25000000,
+      "cacheReadPicoUsdPerToken": 500000,
+      "cacheWrite5mPicoUsdPerToken": 6250000,
+      "cacheWrite1hPicoUsdPerToken": 10000000,
+      "sourceRefs": [
+        "pricing#Claude Opus 4.5 row and prompt-caching multipliers",
+        "releaseNotes#November 24 launch",
+        "deprecations#Exact pinned ID"
+      ]
+    },
+    {
+      "provider": "anthropic-api",
+      "canonicalModel": "claude-opus-4-6",
+      "aliases": ["claude-opus-4-6"],
+      "effectiveStart": "2026-02-05",
+      "effectiveEnd": null,
+      "modifier": "standard",
+      "inputPicoUsdPerToken": 5000000,
+      "outputPicoUsdPerToken": 25000000,
+      "cacheReadPicoUsdPerToken": 500000,
+      "cacheWrite5mPicoUsdPerToken": 6250000,
+      "cacheWrite1hPicoUsdPerToken": 10000000,
+      "sourceRefs": [
+        "pricing#Claude Opus 4.6 row and prompt-caching multipliers",
+        "modelIds#Dateless pinned ID",
+        "releaseNotes#February 5 launch"
+      ]
+    },
+    {
+      "provider": "anthropic-api",
+      "canonicalModel": "claude-opus-4-7",
+      "aliases": ["claude-opus-4-7"],
+      "effectiveStart": "2026-04-16",
+      "effectiveEnd": null,
+      "modifier": "standard",
+      "inputPicoUsdPerToken": 5000000,
+      "outputPicoUsdPerToken": 25000000,
+      "cacheReadPicoUsdPerToken": 500000,
+      "cacheWrite5mPicoUsdPerToken": 6250000,
+      "cacheWrite1hPicoUsdPerToken": 10000000,
+      "sourceRefs": [
+        "pricing#Claude Opus 4.7 row and prompt-caching multipliers",
+        "modelIds#Dateless pinned ID",
+        "releaseNotes#April 16 launch"
+      ]
+    },
+    {
+      "provider": "anthropic-api",
+      "canonicalModel": "claude-opus-4-8",
+      "aliases": ["claude-opus-4-8"],
+      "effectiveStart": "2026-05-28",
+      "effectiveEnd": null,
+      "modifier": "standard",
+      "inputPicoUsdPerToken": 5000000,
+      "outputPicoUsdPerToken": 25000000,
+      "cacheReadPicoUsdPerToken": 500000,
+      "cacheWrite5mPicoUsdPerToken": 6250000,
+      "cacheWrite1hPicoUsdPerToken": 10000000,
+      "sourceRefs": [
+        "pricing#Claude Opus 4.8 row and prompt-caching multipliers",
+        "modelIds#Dateless pinned ID",
+        "releaseNotes#May 28 launch"
+      ]
+    },
+    {
+      "provider": "anthropic-api",
+      "canonicalModel": "claude-sonnet-4",
+      "aliases": ["claude-sonnet-4-20250514"],
+      "effectiveStart": "2025-05-22",
+      "effectiveEnd": "2026-06-14",
+      "modifier": "standard",
+      "inputPicoUsdPerToken": 3000000,
+      "outputPicoUsdPerToken": 15000000,
+      "cacheReadPicoUsdPerToken": 300000,
+      "cacheWrite5mPicoUsdPerToken": 3750000,
+      "cacheWrite1hPicoUsdPerToken": 6000000,
+      "sourceRefs": [
+        "pricing#Claude Sonnet 4 row and prompt-caching multipliers",
+        "releaseNotes#May 22 launch and June 15 retirement",
+        "deprecations#Exact pinned ID and June 15 retirement"
+      ]
+    },
+    {
+      "provider": "anthropic-api",
+      "canonicalModel": "claude-sonnet-4-5",
+      "aliases": ["claude-sonnet-4-5", "claude-sonnet-4-5-20250929"],
+      "effectiveStart": "2025-09-29",
+      "effectiveEnd": null,
+      "modifier": "standard",
+      "inputPicoUsdPerToken": 3000000,
+      "outputPicoUsdPerToken": 15000000,
+      "cacheReadPicoUsdPerToken": 300000,
+      "cacheWrite5mPicoUsdPerToken": 3750000,
+      "cacheWrite1hPicoUsdPerToken": 6000000,
+      "sourceRefs": [
+        "pricing#Claude Sonnet 4.5 row and prompt-caching multipliers",
+        "modelIds#Dated snapshot and convenience-alias rules",
+        "releaseNotes#September 29 launch"
+      ]
+    },
+    {
+      "provider": "anthropic-api",
+      "canonicalModel": "claude-sonnet-4-6",
+      "aliases": ["claude-sonnet-4-6"],
+      "effectiveStart": "2026-02-17",
+      "effectiveEnd": null,
+      "modifier": "standard",
+      "inputPicoUsdPerToken": 3000000,
+      "outputPicoUsdPerToken": 15000000,
+      "cacheReadPicoUsdPerToken": 300000,
+      "cacheWrite5mPicoUsdPerToken": 3750000,
+      "cacheWrite1hPicoUsdPerToken": 6000000,
+      "sourceRefs": [
+        "pricing#Claude Sonnet 4.6 row and prompt-caching multipliers",
+        "modelIds#Dateless pinned ID",
+        "releaseNotes#February 17 launch"
+      ]
+    },
+    {
+      "provider": "anthropic-api",
+      "canonicalModel": "claude-sonnet-5",
+      "aliases": ["claude-sonnet-5"],
+      "effectiveStart": "2026-06-30",
+      "effectiveEnd": "2026-08-31",
+      "modifier": "standard",
+      "inputPicoUsdPerToken": 2000000,
+      "outputPicoUsdPerToken": 10000000,
+      "cacheReadPicoUsdPerToken": 200000,
+      "cacheWrite5mPicoUsdPerToken": 2500000,
+      "cacheWrite1hPicoUsdPerToken": 4000000,
+      "sourceRefs": [
+        "pricing#Claude Sonnet 5 introductory row and cache multipliers",
+        "modelIds#Dateless pinned ID",
+        "releaseNotes#June 30 launch and introductory-price boundary"
+      ]
+    },
+    {
+      "provider": "anthropic-api",
+      "canonicalModel": "claude-sonnet-5",
+      "aliases": ["claude-sonnet-5"],
+      "effectiveStart": "2026-09-01",
+      "effectiveEnd": null,
+      "modifier": "standard",
+      "inputPicoUsdPerToken": 3000000,
+      "outputPicoUsdPerToken": 15000000,
+      "cacheReadPicoUsdPerToken": 300000,
+      "cacheWrite5mPicoUsdPerToken": 3750000,
+      "cacheWrite1hPicoUsdPerToken": 6000000,
+      "sourceRefs": [
+        "pricing#Claude Sonnet 5 standard row and cache multipliers",
+        "modelIds#Dateless pinned ID",
+        "releaseNotes#June 30 announcement of September 1 standard-price boundary"
+      ]
+    }
+  ],
+  "refreshProcedure": [
+    "Retrieve every listed official source on the new access date.",
+    "Reconcile each exact first-party model ID, launch, suspension, restoration, retirement, modifier, and rate.",
+    "Leave any unsupported identity, interval, or modifier unpriced.",
+    "Update this evidence inventory and the compiled registry together.",
+    "Run the evidence-parity and boundary tests before changing the registry version."
+  ]
+}

@@ -1,0 +1,44 @@
+Generate a Claude Code wrapped report from local Claude Code artifacts.
+
+Usage: ccwrapped [OPTIONS] [YEAR]
+
+Arguments:
+  [YEAR]  
+
+Options:
+      --data-dir <PATH>
+          read a projects or Claude config directory (repeatable)
+      --otel-file <PATH>
+          read a supported local Collector JSON/JSONL file (repeatable)
+      --private-diagnostics
+          include exact paths in local diagnostic errors (never report JSON)
+      --html
+          write claude-code-wrapped.html
+      --markdown
+          write claude-code-wrapped.md
+      --card
+          write claude-code-wrapped-card.html
+      --archive
+          write per-project prompt files to ./wrapped-archive/
+      --all
+          write all output formats (html + card + markdown)
+      --open
+          open selected HTML outputs after writing (implies --html when needed)
+      --json
+          print JSON to stdout only; conflicts with file and browser outputs
+      --plain
+          disable colors (also respects NO_COLOR env var)
+      --timezone <IANA_ZONE>
+          attribute periods and calendar labels in this IANA timezone
+      --active-threshold-minutes <MINUTES>
+          cap inferred active intervals at this many minutes [default: 5]
+      --no-store
+          disable the local incremental SQLite store for this invocation
+      --rebuild-store
+          replace the local incremental store from a complete source scan
+      --store-path <PATH>
+          use an explicit local incremental-store database
+  -h, --help
+          Print help
+  -V, --version
+          Print version

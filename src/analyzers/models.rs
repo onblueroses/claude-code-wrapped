@@ -4,7 +4,7 @@ use crate::{
 };
 use std::collections::{BTreeMap, HashMap};
 
-const THROTTLED_HOURS: std::ops::RangeInclusive<usize> = 12..=18;
+const LEGACY_MIDDAY_HOURS: std::ops::RangeInclusive<usize> = 12..=18;
 
 pub fn detect_anomalies(cost_analysis: &CostAnalysis) -> AnomalyReport {
     let daily_costs = &cost_analysis.daily_costs;
@@ -99,7 +99,7 @@ pub fn analyze_session_intelligence(
         .iter()
         .map(|session| session.duration_minutes)
         .collect::<Vec<_>>();
-    let total_minutes = durations.iter().sum::<u64>();
+    let total_minutes = durations.iter().copied().fold(0u64, u64::saturating_add);
     let avg_duration = if durations.is_empty() {
         0
     } else {
@@ -132,7 +132,7 @@ pub fn analyze_session_intelligence(
         sessions
             .iter()
             .map(|session| session.tool_message_count as u64)
-            .sum::<u64>()
+            .fold(0u64, u64::saturating_add)
             / sessions.len() as u64
     };
 
@@ -140,14 +140,16 @@ pub fn analyze_session_intelligence(
     let mut hour_distribution = vec![0usize; 24];
     let mut tool_totals: HashMap<String, usize> = HashMap::new();
     for entry in entries {
-        *assistant_messages_by_session
+        let message_count = assistant_messages_by_session
             .entry(entry.session_id.clone())
-            .or_insert(0usize) += 1;
+            .or_insert(0usize);
+        *message_count = message_count.saturating_add(1);
         if let Some(hour) = crate::timestamp_hour(&entry.timestamp) {
-            hour_distribution[hour as usize] += 1;
+            hour_distribution[hour as usize] = hour_distribution[hour as usize].saturating_add(1);
         }
         for tool in &entry.tool_names {
-            *tool_totals.entry(tool.clone()).or_insert(0) += 1;
+            let count = tool_totals.entry(tool.clone()).or_insert(0);
+            *count = count.saturating_add(1);
         }
     }
 
@@ -157,14 +159,17 @@ pub fn analyze_session_intelligence(
         sessions
             .iter()
             .map(|session| {
-                session.prompt_count
-                    + session.tool_message_count
-                    + assistant_messages_by_session
-                        .get(&session.session_id)
-                        .copied()
-                        .unwrap_or(0)
+                session
+                    .prompt_count
+                    .saturating_add(session.tool_message_count)
+                    .saturating_add(
+                        assistant_messages_by_session
+                            .get(&session.session_id)
+                            .copied()
+                            .unwrap_or(0),
+                    )
             })
-            .sum::<usize>() as u64
+            .fold(0usize, usize::saturating_add) as u64
             / sessions.len() as u64
     };
 
@@ -178,8 +183,11 @@ pub fn analyze_session_intelligence(
             share_pct: 0,
         })
         .collect::<Vec<_>>();
-    peak_hours.sort_by(|left, right| right.count.cmp(&left.count));
-    let total_hour_messages = hour_distribution.iter().sum::<usize>();
+    peak_hours.sort_by_key(|hour| std::cmp::Reverse(hour.count));
+    let total_hour_messages = hour_distribution
+        .iter()
+        .copied()
+        .fold(0usize, usize::saturating_add);
     for bucket in &mut peak_hours {
         if total_hour_messages > 0 {
             bucket.share_pct =
@@ -187,9 +195,10 @@ pub fn analyze_session_intelligence(
         }
     }
 
-    let peak_overlap_messages = hour_distribution[THROTTLED_HOURS.clone()]
+    let peak_overlap_messages = hour_distribution[LEGACY_MIDDAY_HOURS.clone()]
         .iter()
-        .sum::<usize>();
+        .copied()
+        .fold(0usize, usize::saturating_add);
     let peak_overlap_pct = if total_hour_messages > 0 {
         ((peak_overlap_messages as f64 / total_hour_messages as f64) * 100.0).round() as u64
     } else {
@@ -200,7 +209,12 @@ pub fn analyze_session_intelligence(
         .into_iter()
         .map(|(name, count)| ToolCount { name, count })
         .collect::<Vec<_>>();
-    top_tools.sort_by(|left, right| right.count.cmp(&left.count));
+    top_tools.sort_by(|left, right| {
+        right
+            .count
+            .cmp(&left.count)
+            .then_with(|| left.name.cmp(&right.name))
+    });
 
     SessionIntel {
         available: true,
@@ -228,9 +242,11 @@ pub fn analyze_model_routing(
 ) -> ModelRouting {
     let total_cost = cost_analysis.model_costs.values().sum::<f64>();
     let busiest_hour = crate::busiest_hour(entries);
-    if total_cost < 0.01 {
+    if entries.is_empty() {
         return ModelRouting {
             available: false,
+            method_id: "routing/model-tier-request-share/v1".to_string(),
+            unit: "request-share".to_string(),
             total_cost,
             busiest_hour,
             ..ModelRouting::default()
@@ -255,12 +271,23 @@ pub fn analyze_model_routing(
         } else {
             "other"
         };
-        *tier_costs.entry(tier.to_string()).or_insert(0.0) += cost;
+        let total = tier_costs.entry(tier.to_string()).or_insert(0.0);
+        *total = (*total + cost).min(f64::MAX);
     }
 
-    let opus_pct = ((tier_costs["opus"] / total_cost) * 100.0).round() as u64;
-    let sonnet_pct = ((tier_costs["sonnet"] / total_cost) * 100.0).round() as u64;
-    let haiku_pct = ((tier_costs["haiku"] / total_cost) * 100.0).round() as u64;
+    let mut request_counts = [0usize; 5];
+    for entry in entries {
+        let tier = match crate::ingestion::pricing::canonical_model(&entry.model) {
+            Some(model) if model.contains("opus") => 0,
+            Some(model) if model.contains("sonnet") => 1,
+            Some(model) if model.contains("haiku") => 2,
+            Some(_) => 3,
+            None => 4,
+        };
+        request_counts[tier] = request_counts[tier].saturating_add(1);
+    }
+    let [opus_pct, sonnet_pct, haiku_pct, other_pct, unknown_pct] =
+        apportioned_percentages(request_counts);
 
     let subagent_messages = entries.iter().filter(|entry| entry.is_subagent).count();
     let subagent_pct = if entries.is_empty() {
@@ -269,7 +296,7 @@ pub fn analyze_model_routing(
         ((subagent_messages as f64 / entries.len() as f64) * 100.0).round() as u64
     };
 
-    let model_count = cost_analysis.model_costs.len();
+    let model_count = request_counts.iter().filter(|count| **count > 0).count();
     let diversity_score = if model_count >= 3 && opus_pct < 80 {
         90
     } else if model_count >= 2 && opus_pct < 90 {
@@ -280,23 +307,47 @@ pub fn analyze_model_routing(
         40
     };
 
-    let opus_cost = tier_costs["opus"];
-    let routable_to_sonnet = opus_cost * 0.4;
-    let sonnet_equivalent_cost = routable_to_sonnet * 0.6;
-    let estimated_savings = routable_to_sonnet - sonnet_equivalent_cost;
-
     ModelRouting {
         available: true,
+        method_id: "routing/model-tier-request-share/v1".to_string(),
+        unit: "request-share".to_string(),
+        observations: entries.len(),
         opus_pct,
         sonnet_pct,
         haiku_pct,
-        estimated_savings,
+        other_pct,
+        unknown_pct,
+        estimated_savings: 0.0,
         subagent_pct,
         diversity_score,
         tier_costs,
         total_cost,
         busiest_hour,
     }
+}
+
+fn apportioned_percentages(counts: [usize; 5]) -> [u64; 5] {
+    let total = counts.iter().copied().fold(0usize, usize::saturating_add);
+    if total == 0 {
+        return [0; 5];
+    }
+    let total = total as u128;
+    let mut shares = [0u64; 5];
+    let mut remainders = [(0u128, 0usize); 5];
+    for (index, count) in counts.into_iter().enumerate() {
+        let scaled = (count as u128).saturating_mul(100);
+        shares[index] = u64::try_from(scaled / total).unwrap_or(100);
+        remainders[index] = (scaled % total, index);
+    }
+    remainders.sort_by(|left, right| right.0.cmp(&left.0).then_with(|| left.1.cmp(&right.1)));
+    let assigned = shares.iter().copied().sum::<u64>();
+    for (_, index) in remainders
+        .into_iter()
+        .take(usize::try_from(100u64.saturating_sub(assigned)).unwrap_or(0))
+    {
+        shares[index] = shares[index].saturating_add(1);
+    }
+    shares
 }
 
 fn percentile(sorted: &[u64], pct: f64) -> u64 {
@@ -348,8 +399,8 @@ fn cost_trend(daily_costs: &[crate::DailyCost]) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::analyze_model_routing;
-    use crate::{AssistantEntry, CostAnalysis};
+    use super::{analyze_model_routing, analyze_session_intelligence};
+    use crate::{AssistantEntry, CostAnalysis, SessionBreakdown, SessionSummary};
     use std::collections::BTreeMap;
 
     fn cost_analysis(model_costs: BTreeMap<String, f64>) -> CostAnalysis {
@@ -359,14 +410,14 @@ mod tests {
         }
     }
 
-    fn entry(session_id: &str, is_subagent: bool) -> AssistantEntry {
+    fn entry_with_model(session_id: &str, model: &str, is_subagent: bool) -> AssistantEntry {
         AssistantEntry {
             session_id: session_id.to_string(),
             project_hash: "project".to_string(),
             is_subagent,
             cwd: None,
             timestamp: "2026-01-01T12:00:00.000Z".to_string(),
-            model: "claude-opus-4-1".to_string(),
+            model: model.to_string(),
             input_tokens: 0,
             output_tokens: 0,
             cache_creation_tokens: 0,
@@ -376,25 +427,41 @@ mod tests {
         }
     }
 
+    fn entry(session_id: &str, is_subagent: bool) -> AssistantEntry {
+        entry_with_model(session_id, "claude-opus-4-1", is_subagent)
+    }
+
     #[test]
-    fn analyze_model_routing_calculates_tier_percentages() {
+    fn analyze_model_routing_calculates_request_percentages_independently_of_cost() {
         let routing = analyze_model_routing(
             &cost_analysis(BTreeMap::from([
                 ("Claude Opus".to_string(), 80.0),
                 ("Claude Sonnet".to_string(), 20.0),
                 ("Claude Haiku".to_string(), 0.0),
             ])),
-            &[entry("session-1", false)],
+            &[
+                entry_with_model("session-1", "claude-opus-4-1", false),
+                entry_with_model("session-2", "claude-sonnet-4-6", false),
+            ],
         );
 
         assert!(routing.available);
-        assert_eq!(routing.opus_pct, 80);
-        assert_eq!(routing.sonnet_pct, 20);
+        assert_eq!(routing.observations, 2);
+        assert_eq!(routing.opus_pct, 50);
+        assert_eq!(routing.sonnet_pct, 50);
         assert_eq!(routing.haiku_pct, 0);
+        assert_eq!(
+            routing.opus_pct
+                + routing.sonnet_pct
+                + routing.haiku_pct
+                + routing.other_pct
+                + routing.unknown_pct,
+            100
+        );
     }
 
     #[test]
-    fn analyze_model_routing_keeps_fractional_estimated_savings() {
+    fn analyze_model_routing_does_not_fabricate_savings_from_request_mix() {
         let routing = analyze_model_routing(
             &cost_analysis(BTreeMap::from([
                 ("Claude Opus".to_string(), 4.0),
@@ -407,7 +474,36 @@ mod tests {
             ],
         );
 
-        assert!((routing.estimated_savings - 0.64).abs() < f64::EPSILON);
+        assert_eq!(routing.estimated_savings, 0.0);
         assert_eq!(routing.subagent_pct, 33);
+    }
+
+    #[test]
+    fn session_top_tools_break_equal_count_ties_lexically() {
+        let mut entries = Vec::new();
+        for index in 0..64 {
+            let mut entry = entry("session-1", false);
+            entry.tool_names = vec![format!("tool-{index:03}")];
+            entries.push(entry);
+        }
+        let breakdown = SessionBreakdown {
+            sessions: vec![SessionSummary {
+                session_id: "session-1".to_string(),
+                ..SessionSummary::default()
+            }],
+            ..SessionBreakdown::default()
+        };
+
+        let intelligence = analyze_session_intelligence(&breakdown, &entries);
+        assert_eq!(
+            intelligence
+                .top_tools
+                .iter()
+                .map(|tool| tool.name.as_str())
+                .collect::<Vec<_>>(),
+            (0..8)
+                .map(|index| format!("tool-{index:03}"))
+                .collect::<Vec<_>>()
+        );
     }
 }

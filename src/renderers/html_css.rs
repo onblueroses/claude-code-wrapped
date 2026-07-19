@@ -1,7 +1,7 @@
 pub const STYLE_BLOCK: &str = r#"<style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+      font-family: "Liberation Sans", Arial, sans-serif;
       background: #000;
       color: #fff;
       -webkit-font-smoothing: antialiased;
@@ -16,6 +16,8 @@ pub const STYLE_BLOCK: &str = r#"<style>
       align-items: center;
       justify-content: center;
     }
+    .slide:target { min-height: 100vh; }
+    body:has(> .slide:target) > .slide:not(:target) { display: none; }
     .slide-inner {
       width: 100%;
       max-width: 860px;
@@ -34,8 +36,8 @@ pub const STYLE_BLOCK: &str = r#"<style>
     /* ── Opening slide ── */
     .opening-slide {
       min-height: 100vh;
-      align-items: flex-end;
-      padding-bottom: 72px;
+      align-items: flex-start;
+      padding: 52px 40px 44px;
     }
     .wordmark {
       display: block;
@@ -44,21 +46,30 @@ pub const STYLE_BLOCK: &str = r#"<style>
       letter-spacing: 0.28em;
       text-transform: uppercase;
       color: #1a8a47;
-      margin-bottom: 48px;
+      margin-bottom: 24px;
     }
     .archetype-title {
-      font-size: clamp(56px, 10vw, 120px);
+      font-size: clamp(48px, 8vw, 96px);
       font-weight: 900;
       line-height: 0.88;
       letter-spacing: -0.04em;
-      margin-bottom: 24px;
+      margin-bottom: 16px;
     }
     .hero-desc {
       font-size: clamp(15px, 2vw, 19px);
       opacity: 0.5;
       line-height: 1.6;
       max-width: 520px;
-      margin-bottom: 48px;
+      margin-bottom: 22px;
+    }
+    .trust-summary {
+      margin: 0 0 22px;
+      max-width: 760px;
+      color: rgba(255,255,255,0.48);
+      font: 10px/1.35 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      overflow-wrap: anywhere;
+      columns: 2;
+      column-gap: 28px;
     }
     .hero-stats {
       display: flex;
@@ -111,8 +122,8 @@ pub const STYLE_BLOCK: &str = r#"<style>
       max-width: 480px;
     }
 
-    /* ── Cache grade hero ── */
-    .cache-grade-hero {
+    /* ── Cache evidence hero ── */
+    .cache-evidence-hero {
       font-size: clamp(160px, 26vw, 300px);
       font-weight: 900;
       line-height: 0.82;
@@ -305,7 +316,7 @@ pub const STYLE_BLOCK: &str = r#"<style>
       .card-grid { grid-template-columns: 1fr; }
       .data-grid-2 { grid-template-columns: 1fr; gap: 48px; }
       .hero-stats { gap: 24px; }
-      .cache-grade-hero { font-size: 140px; }
+      .cache-evidence-hero { font-size: 140px; }
     }
     @media (max-width: 420px) {
       .slide { padding: 48px 20px; }

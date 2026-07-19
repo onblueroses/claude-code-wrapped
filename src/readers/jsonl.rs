@@ -1,116 +1,43 @@
-use crate::analyzers::cost::approximate_cost;
-use crate::readers::discovery::discover_jsonl_files;
-use crate::readers::wire::JsonlRecord;
-use crate::{
-    round_ratio, timestamp_date_key, timestamp_year, AssistantEntry, DailyAggregate,
-    ModelAggregate, ProjectSummary,
+use crate::readers::{
+    compatibility_ingest, emit_compatibility_coverage, emit_compatibility_error, IngestionReadError,
 };
-use serde_json::Value;
-use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
-use std::fs;
+use crate::{
+    round_ratio, timestamp_date_key, AssistantEntry, DailyAggregate, DataCoverage, ModelAggregate,
+    ProjectSummary,
+};
+use std::collections::{BTreeMap, BTreeSet, HashMap};
 use std::path::Path;
 
-#[derive(Debug, Clone)]
-struct FileContext {
-    session_id: String,
-    project_hash: String,
-    is_subagent: bool,
-}
-
+/// Reads assistant occurrences through the bounded, privacy-safe normalized pipeline.
+///
+/// This preserves the original infallible signature. Prefer [`try_read_all_jsonl`] when
+/// coverage or an actionable ingestion error is required.
 pub fn read_all_jsonl(projects_dir: &Path, year: Option<i32>) -> Vec<AssistantEntry> {
-    // First pass of the reader pipeline: flatten assistant-only JSONL records into
-    // `AssistantEntry` values for cost, cache, anomaly, and routing analysis.
-    // This intentionally does not preserve parent/child session structure; the
-    // second pass in `read_session_breakdown` rebuilds that tree for story and
-    // session-intelligence consumers that need `SessionSummary`/`SubagentSummary`.
-    let mut entries = Vec::new();
-    let mut seen_message_ids = HashSet::new();
-    let mut skipped_files = 0usize;
-    let mut skipped_lines = 0usize;
-
-    for path in discover_jsonl_files(projects_dir) {
-        let Some(context) = file_context(projects_dir, &path) else {
-            continue;
-        };
-
-        let Ok(raw) = fs::read_to_string(&path) else {
-            skipped_files += 1;
-            continue;
-        };
-
-        for line in raw.lines().filter(|line| !line.trim().is_empty()) {
-            let Ok(record) = serde_json::from_str::<JsonlRecord>(line) else {
-                // Only count as malformed if the line looks like intended JSON, not
-                // a truncated continuation fragment or stray whitespace.
-                // Use trim_start so leading-space records (e.g. indented lines or
-                // partial records whose opening brace was not the first byte) are
-                // still counted rather than silently discarded.
-                let trimmed = line.trim_start();
-                if trimmed.starts_with('{') || trimmed.starts_with('[') {
-                    skipped_lines += 1;
-                }
-                continue;
-            };
-
-            if record.record_type.as_deref() != Some("assistant") {
-                continue;
-            }
-
-            let Some(timestamp) = record.timestamp.clone() else {
-                continue;
-            };
-
-            if let Some(selected_year) = year {
-                if timestamp_year(&timestamp) != Some(selected_year) {
-                    continue;
-                }
-            }
-
-            let Some(message) = record.message else {
-                continue;
-            };
-            let Some(usage) = message.usage else {
-                continue;
-            };
-
-            if let Some(message_id) = message.id {
-                if !seen_message_ids.insert(message_id) {
-                    continue;
-                }
-            }
-
-            entries.push(AssistantEntry {
-                session_id: record
-                    .session_id
-                    .unwrap_or_else(|| context.session_id.clone()),
-                project_hash: context.project_hash.clone(),
-                is_subagent: context.is_subagent,
-                cwd: record.cwd,
-                timestamp,
-                model: message.model.unwrap_or_else(|| "unknown".to_string()),
-                input_tokens: usage.input_tokens.unwrap_or(0),
-                output_tokens: usage.output_tokens.unwrap_or(0),
-                cache_creation_tokens: usage.cache_creation_input_tokens.unwrap_or(0),
-                cache_read_tokens: usage.cache_read_input_tokens.unwrap_or(0),
-                cost_usd: record.cost_usd.unwrap_or(0.0),
-                tool_names: extract_tool_names(message.content.as_ref()),
-            });
+    match try_read_all_jsonl(projects_dir, year) {
+        Ok((entries, coverage)) => {
+            emit_compatibility_coverage(&coverage, "read_all_jsonl");
+            entries
+        }
+        Err(error) => {
+            emit_compatibility_error(&error, "read_all_jsonl");
+            Vec::new()
         }
     }
+}
 
-    // Sort by parsed epoch so mixed UTC/offset timestamps order correctly.
-    entries.sort_by_key(|e| {
-        crate::parse_timestamp(&e.timestamp)
-            .map(|dt| dt.timestamp())
-            .unwrap_or(0)
-    });
-    if skipped_files > 0 || skipped_lines > 0 {
-        eprintln!(
-            "warning: skipped {} unreadable file(s), {} malformed line(s) — report may be incomplete",
-            skipped_files, skipped_lines
-        );
-    }
-    entries
+/// Returns privacy-safe assistant occurrences together with ingestion coverage.
+pub fn try_read_all_jsonl(
+    projects_dir: &Path,
+    year: Option<i32>,
+) -> Result<(Vec<AssistantEntry>, DataCoverage), IngestionReadError> {
+    let ingested = compatibility_ingest(projects_dir, year)?;
+    let entries = ingested
+        .entries
+        .iter()
+        .filter(|entry| entry.is_message_occurrence())
+        .map(|entry| entry.observed_accumulator())
+        .collect();
+    Ok((entries, ingested.coverage))
 }
 
 pub fn aggregate_daily(entries: &[AssistantEntry]) -> Vec<DailyAggregate> {
@@ -135,21 +62,29 @@ pub fn aggregate_daily(entries: &[AssistantEntry]) -> Vec<DailyAggregate> {
 
         let entry_cost = resolved_entry_cost(entry);
         let day = by_date.entry(date.clone()).or_default();
-        day.total_cost += entry_cost;
-        day.input_tokens += entry.input_tokens;
-        day.output_tokens += entry.output_tokens;
-        day.cache_creation_tokens += entry.cache_creation_tokens;
-        day.cache_read_tokens += entry.cache_read_tokens;
-        day.message_count += 1;
+        day.total_cost = (day.total_cost + entry_cost).min(f64::MAX);
+        day.input_tokens = day.input_tokens.saturating_add(entry.input_tokens);
+        day.output_tokens = day.output_tokens.saturating_add(entry.output_tokens);
+        day.cache_creation_tokens = day
+            .cache_creation_tokens
+            .saturating_add(entry.cache_creation_tokens);
+        day.cache_read_tokens = day
+            .cache_read_tokens
+            .saturating_add(entry.cache_read_tokens);
+        day.message_count = day.message_count.saturating_add(1);
         day.session_ids.insert(entry.session_id.clone());
 
         let model = day.models.entry(entry.model.clone()).or_default();
-        model.input_tokens += entry.input_tokens;
-        model.output_tokens += entry.output_tokens;
-        model.cache_creation_tokens += entry.cache_creation_tokens;
-        model.cache_read_tokens += entry.cache_read_tokens;
-        model.cost += entry_cost;
-        model.message_count += 1;
+        model.input_tokens = model.input_tokens.saturating_add(entry.input_tokens);
+        model.output_tokens = model.output_tokens.saturating_add(entry.output_tokens);
+        model.cache_creation_tokens = model
+            .cache_creation_tokens
+            .saturating_add(entry.cache_creation_tokens);
+        model.cache_read_tokens = model
+            .cache_read_tokens
+            .saturating_add(entry.cache_read_tokens);
+        model.cost = (model.cost + entry_cost).min(f64::MAX);
+        model.message_count = model.message_count.saturating_add(1);
     }
 
     by_date
@@ -163,6 +98,7 @@ pub fn aggregate_daily(entries: &[AssistantEntry]) -> Vec<DailyAggregate> {
             cache_read_tokens: day.cache_read_tokens,
             message_count: day.message_count,
             session_count: day.session_ids.len(),
+            active_seconds: 0,
             cache_output_ratio: round_ratio(day.cache_read_tokens, day.output_tokens),
             models: day.models,
         })
@@ -202,11 +138,15 @@ pub fn aggregate_by_project(entries: &[AssistantEntry]) -> Vec<ProjectSummary> {
                 ..Accumulator::default()
             });
 
-        project.input_tokens += entry.input_tokens;
-        project.output_tokens += entry.output_tokens;
-        project.cache_creation_tokens += entry.cache_creation_tokens;
-        project.cache_read_tokens += entry.cache_read_tokens;
-        project.message_count += 1;
+        project.input_tokens = project.input_tokens.saturating_add(entry.input_tokens);
+        project.output_tokens = project.output_tokens.saturating_add(entry.output_tokens);
+        project.cache_creation_tokens = project
+            .cache_creation_tokens
+            .saturating_add(entry.cache_creation_tokens);
+        project.cache_read_tokens = project
+            .cache_read_tokens
+            .saturating_add(entry.cache_read_tokens);
+        project.message_count = project.message_count.saturating_add(1);
         project.sessions.insert(entry.session_id.clone());
         if entry.is_subagent {
             project.subagent_sessions.insert(entry.session_id.clone());
@@ -236,7 +176,8 @@ pub fn aggregate_by_project(entries: &[AssistantEntry]) -> Vec<ProjectSummary> {
         }
 
         if let Some(cwd) = &entry.cwd {
-            *project.cwd_counts.entry(cwd.clone()).or_insert(0) += 1;
+            let count = project.cwd_counts.entry(cwd.clone()).or_insert(0);
+            *count = count.saturating_add(1);
         }
     }
 
@@ -259,13 +200,19 @@ pub fn aggregate_by_project(entries: &[AssistantEntry]) -> Vec<ProjectSummary> {
                     project.top_level_sessions.len()
                 },
                 subagent_session_count: project.subagent_sessions.len(),
+                active_seconds: 0,
                 first_seen: project.first_seen,
                 last_seen: project.last_seen,
             }
         })
         .collect::<Vec<_>>();
 
-    projects.sort_by(|left, right| right.output_tokens.cmp(&left.output_tokens));
+    projects.sort_by(|left, right| {
+        right
+            .output_tokens
+            .cmp(&left.output_tokens)
+            .then_with(|| left.hash.cmp(&right.hash))
+    });
     projects
 }
 
@@ -327,51 +274,27 @@ pub fn resolve_project_path(
     cwd_counts: &HashMap<String, usize>,
     fallback_hash: &str,
 ) -> (Option<String>, String) {
-    if let Some((path, _)) = cwd_counts.iter().max_by(|left, right| left.1.cmp(right.1)) {
+    if let Some((path, _)) = cwd_counts
+        .iter()
+        .max_by(|left, right| left.1.cmp(right.1).then_with(|| right.0.cmp(left.0)))
+    {
         return (Some(path.clone()), derive_project_name(path));
+    }
+    if fallback_hash
+        .strip_prefix("project-")
+        .is_some_and(|suffix| {
+            !suffix.is_empty() && suffix.bytes().all(|byte| byte.is_ascii_digit())
+        })
+    {
+        return (None, fallback_hash.to_string());
     }
     decode_project_hash(fallback_hash)
 }
 
-fn file_context(projects_dir: &Path, file_path: &Path) -> Option<FileContext> {
-    let relative = file_path.strip_prefix(projects_dir).ok()?;
-    let parts = relative
-        .iter()
-        .map(|part| part.to_string_lossy().to_string())
-        .collect::<Vec<_>>();
-    if parts.len() < 2 {
-        return None;
-    }
-
-    Some(FileContext {
-        session_id: file_path.file_stem()?.to_string_lossy().to_string(),
-        project_hash: parts.first()?.to_string(),
-        is_subagent: parts.iter().any(|part| part == "subagents"),
-    })
-}
-
-fn extract_tool_names(content: Option<&Value>) -> Vec<String> {
-    let Some(Value::Array(items)) = content else {
-        return Vec::new();
-    };
-
-    items
-        .iter()
-        .filter_map(|item| {
-            let object = item.as_object()?;
-            let item_type = object.get("type")?.as_str()?;
-            if item_type != "tool_use" {
-                return None;
-            }
-            object.get("name")?.as_str().map(str::to_string)
-        })
-        .collect()
-}
-
 fn resolved_entry_cost(entry: &AssistantEntry) -> f64 {
-    if entry.cost_usd > 0.0 {
-        entry.cost_usd
-    } else {
-        approximate_cost(&entry.model, &entry.usage())
-    }
+    crate::ingestion::pricing::legacy_api_equivalent_cost(
+        &entry.model,
+        &entry.timestamp,
+        &entry.usage(),
+    )
 }

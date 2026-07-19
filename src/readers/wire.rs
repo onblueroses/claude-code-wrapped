@@ -1,6 +1,10 @@
 use serde::Deserialize;
 use serde_json::Value;
 
+/// Legacy parse-only DTO retained for source compatibility.
+///
+/// Active readers normalize untrusted records through the bounded ingestion pipeline and do
+/// not use this type as an adapter.
 #[derive(Debug, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct JsonlRecord {
@@ -17,6 +21,7 @@ pub struct JsonlRecord {
     pub entrypoint: Option<String>,
 }
 
+/// Legacy parse-only DTO retained for source compatibility; active readers do not use it.
 #[derive(Debug, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct JsonlMessage {
@@ -26,6 +31,7 @@ pub struct JsonlMessage {
     pub content: Option<Value>,
 }
 
+/// Legacy parse-only DTO retained for source compatibility; active readers do not use it.
 #[derive(Debug, Deserialize, Default)]
 pub struct JsonlUsage {
     pub input_tokens: Option<u64>,

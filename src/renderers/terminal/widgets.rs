@@ -1,11 +1,20 @@
+use std::borrow::Cow;
+use unicode_width::{UnicodeWidthChar, UnicodeWidthStr};
+
 const SPARK_CHARS: &[char] = &['▁', '▂', '▃', '▄', '▅', '▆', '▇', '█'];
 const BAR_FULL: char = '█';
 const BAR_EMPTY: char = '░';
+const MAX_TERMINAL_WIDTH: usize = 512;
+
+fn bounded_width(width: usize) -> usize {
+    width.min(MAX_TERMINAL_WIDTH)
+}
 
 /// Renders a sparkline from values using Unicode block characters.
 /// Each value maps to one character. Width is ignored if values.len() < width;
 /// if values.len() > width, values are bucketed.
 pub fn sparkline(values: &[f64], width: usize) -> String {
+    let width = bounded_width(width);
     if values.is_empty() || width == 0 {
         return String::new();
     }
@@ -44,6 +53,7 @@ pub fn sparkline(values: &[f64], width: usize) -> String {
 
 /// Renders a filled/empty percentage bar: ████░░░░░░
 pub fn percentage_bar(pct: f64, width: usize) -> String {
+    let width = bounded_width(width);
     if width == 0 {
         return String::new();
     }
@@ -60,6 +70,7 @@ pub fn percentage_bar(pct: f64, width: usize) -> String {
 /// Renders a two-tone ratio bar and returns (left_part, right_part) for coloring.
 /// Uses distinct glyphs so the split is visible even without color.
 pub fn ratio_bar(left_pct: f64, width: usize) -> (String, String) {
+    let width = bounded_width(width);
     if width == 0 {
         return (String::new(), String::new());
     }
@@ -74,7 +85,8 @@ pub fn ratio_bar(left_pct: f64, width: usize) -> (String, String) {
 
 /// Renders a line with label left-aligned and value right-aligned, padded to width.
 pub fn label_value(label: &str, value: &str, width: usize) -> String {
-    let content_len = label.len() + value.len();
+    let width = bounded_width(width);
+    let content_len = UnicodeWidthStr::width(label) + UnicodeWidthStr::width(value);
     if content_len >= width {
         return format!("{label}  {value}");
     }
@@ -84,27 +96,78 @@ pub fn label_value(label: &str, value: &str, width: usize) -> String {
 
 /// Renders a section header with a rule line.
 pub fn section_header(title: &str, width: usize) -> String {
-    let rule_len = width.saturating_sub(title.len() + 3);
+    // This widget's established contract renders one column beyond `width`.
+    // Reserve that column before applying the global allocation ceiling.
+    let width = width.min(MAX_TERMINAL_WIDTH.saturating_sub(1));
+    let rule_len = width.saturating_sub(UnicodeWidthStr::width(title) + 3);
     format!("-- {} {}", title, "-".repeat(rule_len))
 }
 
-/// Pads or truncates a string to fit exactly `width` characters.
-pub fn pad(text: &str, width: usize) -> String {
-    let char_count = text.chars().count();
-    if char_count >= width {
-        text.chars().take(width).collect()
-    } else {
-        format!("{}{}", text, " ".repeat(width - char_count))
+/// Makes a report-derived value inert before it reaches a terminal sink.
+pub fn terminal_text(value: &str) -> Cow<'_, str> {
+    if value.chars().all(is_terminal_text_character) {
+        return Cow::Borrowed(value);
     }
+
+    Cow::Owned(
+        value
+            .chars()
+            .map(|character| {
+                if is_terminal_text_character(character) {
+                    character
+                } else {
+                    '\u{fffd}'
+                }
+            })
+            .collect(),
+    )
 }
 
-/// Detects terminal width from COLUMNS env var, falling back to 80.
+fn is_terminal_text_character(character: char) -> bool {
+    !character.is_control()
+        && !matches!(
+            character,
+            '\u{061c}'
+                | '\u{200e}'
+                | '\u{200f}'
+                | '\u{2028}'
+                | '\u{2029}'
+                | '\u{202a}'..='\u{202e}'
+                | '\u{2066}'..='\u{2069}'
+        )
+}
+
+/// Pads or truncates a string to fit exactly `width` terminal columns.
+pub fn pad(text: &str, width: usize) -> String {
+    let width = bounded_width(width);
+    let mut rendered = String::with_capacity(text.len().min(width));
+    let mut columns = 0usize;
+    for character in text.chars() {
+        let character_width = UnicodeWidthChar::width(character).unwrap_or(0);
+        if columns.saturating_add(character_width) > width {
+            break;
+        }
+        rendered.push(character);
+        columns = columns.saturating_add(character_width);
+    }
+    rendered.push_str(&" ".repeat(width.saturating_sub(columns)));
+    rendered
+}
+
+const DEFAULT_TERMINAL_WIDTH: usize = 80;
+const MIN_TERMINAL_WIDTH: usize = 40;
+
+/// Detects terminal width from COLUMNS while bounding renderer allocations.
 pub fn terminal_width() -> usize {
-    std::env::var("COLUMNS")
-        .ok()
-        .and_then(|v| v.parse::<usize>().ok())
-        .unwrap_or(80)
-        .max(40)
+    let columns = std::env::var("COLUMNS").ok();
+    terminal_width_from(columns.as_deref())
+}
+
+fn terminal_width_from(columns: Option<&str>) -> usize {
+    columns
+        .and_then(|value| value.parse::<usize>().ok())
+        .unwrap_or(DEFAULT_TERMINAL_WIDTH)
+        .clamp(MIN_TERMINAL_WIDTH, MAX_TERMINAL_WIDTH)
 }
 
 #[cfg(test)]
@@ -123,6 +186,14 @@ mod tests {
         let result = sparkline(&[5.0], 10);
         assert_eq!(result.chars().count(), 1);
         assert_eq!(result, "█");
+    }
+
+    #[test]
+    fn terminal_text_replaces_controls_and_directional_formatting() {
+        assert_eq!(
+            terminal_text("safe\u{1b}]52\u{7}\r\n\u{202e}\u{2028}end"),
+            "safe�]52�����end"
+        );
     }
 
     #[test]
@@ -245,6 +316,42 @@ mod tests {
     }
 
     // -- terminal_width --
+
+    #[test]
+    fn terminal_width_caps_hostile_environment_values() {
+        assert_eq!(terminal_width_from(Some("1000000000")), 512);
+        assert_eq!(terminal_width_from(Some("39")), 40);
+        assert_eq!(terminal_width_from(Some("invalid")), 80);
+    }
+
+    #[test]
+    fn public_widgets_bound_hostile_widths_without_changing_ordinary_widths() {
+        let boundaries = [
+            (0, 0),
+            (39, 39),
+            (40, 40),
+            (512, 512),
+            (513, 512),
+            (usize::MAX, 512),
+        ];
+        let values = vec![1.0; 1_024];
+
+        for (requested, expected) in boundaries {
+            assert_eq!(sparkline(&values, requested).chars().count(), expected);
+            assert_eq!(percentage_bar(50.0, requested).chars().count(), expected);
+            let (left, right) = ratio_bar(50.0, requested);
+            assert_eq!(left.chars().count() + right.chars().count(), expected);
+            assert_eq!(pad("", requested).chars().count(), expected);
+
+            if expected >= 4 {
+                assert_eq!(
+                    section_header("", requested).chars().count(),
+                    requested.min(MAX_TERMINAL_WIDTH - 1) + 1
+                );
+                assert_eq!(label_value("a", "b", requested).chars().count(), expected);
+            }
+        }
+    }
 
     #[test]
     fn terminal_width_fallback() {

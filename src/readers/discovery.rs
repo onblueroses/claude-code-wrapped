@@ -1,46 +1,33 @@
-use std::fs;
+use super::{compatibility_discover, emit_compatibility_error, IngestionReadError};
+use crate::ingestion::CompatibilityPathScope;
 use std::path::{Path, PathBuf};
 
 pub fn discover_jsonl_files(projects_dir: &Path) -> Vec<PathBuf> {
-    let mut files = Vec::new();
-    collect_jsonl_files(projects_dir, &mut files);
-    files
+    match try_discover_jsonl_files(projects_dir) {
+        Ok(files) => files,
+        Err(error) => {
+            emit_compatibility_error(&error, "discover_jsonl_files");
+            Vec::new()
+        }
+    }
 }
 
 pub fn discover_session_files(projects_dir: &Path) -> Vec<PathBuf> {
-    let mut files = Vec::new();
-    for project_dir in read_dir_sorted(projects_dir)
-        .into_iter()
-        .filter(|path| path.is_dir())
-    {
-        for file in read_dir_sorted(&project_dir)
-            .into_iter()
-            .filter(|path| path.is_file())
-            .filter(|path| path.extension().is_some_and(|ext| ext == "jsonl"))
-        {
-            files.push(file);
-        }
-    }
-    files
-}
-
-fn collect_jsonl_files(dir: &Path, files: &mut Vec<PathBuf>) {
-    for path in read_dir_sorted(dir) {
-        if path.is_dir() {
-            collect_jsonl_files(&path, files);
-        } else if path.is_file() && path.extension().is_some_and(|ext| ext == "jsonl") {
-            files.push(path);
+    match try_discover_session_files(projects_dir) {
+        Ok(files) => files,
+        Err(error) => {
+            emit_compatibility_error(&error, "discover_session_files");
+            Vec::new()
         }
     }
 }
 
-fn read_dir_sorted(dir: &Path) -> Vec<PathBuf> {
-    let mut paths = fs::read_dir(dir)
-        .ok()
-        .into_iter()
-        .flat_map(|entries| entries.filter_map(Result::ok))
-        .map(|entry| entry.path())
-        .collect::<Vec<_>>();
-    paths.sort();
-    paths
+/// Discovers JSONL paths through the bounded, root-confined transcript adapter.
+pub fn try_discover_jsonl_files(projects_dir: &Path) -> Result<Vec<PathBuf>, IngestionReadError> {
+    compatibility_discover(projects_dir, CompatibilityPathScope::AllJsonl)
+}
+
+/// Discovers direct `projects/<project>/<session>.jsonl` paths through the bounded adapter.
+pub fn try_discover_session_files(projects_dir: &Path) -> Result<Vec<PathBuf>, IngestionReadError> {
+    compatibility_discover(projects_dir, CompatibilityPathScope::DirectSessions)
 }

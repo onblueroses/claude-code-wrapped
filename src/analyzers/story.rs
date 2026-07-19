@@ -1,7 +1,7 @@
 use crate::{
-    format_currency, format_ratio, format_tokens, trim_text, weekday_from_date, AssistantEntry,
-    CacheMood, HeroStat, Highlight, NamedCount, PromptRatio, Report, StoryCard, TopProject,
-    TopTool, WrappedStory,
+    format_currency, format_tokens, trim_text, weekday_from_date, AssistantEntry, CacheMood,
+    HeroStat, Highlight, NamedCount, PromptRatio, Report, StoryCard, TopProject, TopTool,
+    WrappedStory,
 };
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -34,19 +34,25 @@ pub fn build_wrapped_story(report: &Report, entries: &[AssistantEntry]) -> Wrapp
         metrics.total_messages,
         metrics.average_messages_per_active_day,
         &metrics.prompt_ratio,
-        &metrics.cache_mood,
     );
     let highlights = build_highlights(report, &metrics);
-    let summary = format!(
-        "{}. {}. {} is your power hour.",
-        metrics.archetype.title,
-        metrics.cache_mood.title,
-        metrics
-            .power_hour
-            .as_ref()
-            .map(|bucket| bucket.label.clone())
-            .unwrap_or_else(|| "Unknown".to_string())
-    );
+    let power_hour = metrics
+        .power_hour
+        .as_ref()
+        .map(|bucket| bucket.label.clone())
+        .unwrap_or_else(|| "Unknown".to_string());
+    let summary = if !crate::canonical_evidence_is_limited(report) {
+        format!(
+            "{}. {}. {power_hour} is your power hour.",
+            metrics.archetype.title, metrics.cache_mood.title
+        )
+    } else {
+        format!(
+            "{}. {} {power_hour} is the peak hour in the observed events.",
+            metrics.archetype.title,
+            crate::PARTIAL_USAGE_LIMITATION
+        )
+    };
     let share_text = if let Some(project) = metrics.top_project.as_ref() {
         format!(
             "{summary} {} carried {}% of your output.",
@@ -82,12 +88,25 @@ pub fn build_wrapped_story(report: &Report, entries: &[AssistantEntry]) -> Wrapp
 }
 
 fn collect_story_metrics(report: &Report, entries: &[AssistantEntry]) -> StoryMetrics {
-    let biggest_session_by_cost = report.session_breakdown.sessions.first().cloned();
-    let biggest_session_by_tokens = {
-        let mut sessions = report.session_breakdown.sessions.clone();
-        sessions.sort_by(|left, right| right.total_tokens.cmp(&left.total_tokens));
-        sessions.first().cloned()
-    };
+    let source_cost_available = report
+        .canonical_metrics
+        .cost
+        .source_recorded
+        .amount_usd
+        .is_some();
+    let usage_totals_available =
+        crate::analytical_capability_available(report, "analysis_usage_totals");
+    let output_available = crate::analytical_capability_available(report, "analysis_output_tokens");
+    let biggest_session_by_cost = source_cost_available
+        .then(|| report.session_breakdown.sessions.first().cloned())
+        .flatten();
+    let biggest_session_by_tokens = usage_totals_available
+        .then(|| {
+            let mut sessions = report.session_breakdown.sessions.clone();
+            sessions.sort_by_key(|session| std::cmp::Reverse(session.total_tokens));
+            sessions.first().cloned()
+        })
+        .flatten();
 
     let active_days = report
         .cost_analysis
@@ -100,7 +119,7 @@ fn collect_story_metrics(report: &Report, entries: &[AssistantEntry]) -> StoryMe
         .daily_costs
         .iter()
         .map(|day| day.message_count)
-        .sum::<usize>();
+        .fold(0usize, usize::saturating_add);
     let average_messages_per_active_day = if active_days.is_empty() {
         0
     } else {
@@ -120,22 +139,71 @@ fn collect_story_metrics(report: &Report, entries: &[AssistantEntry]) -> StoryMe
         total_tokens: report.cost_analysis.totals.total_tokens(),
         average_messages_per_active_day,
         longest_streak,
-        power_hour: crate::busiest_hour(entries),
+        power_hour: report.model_routing.busiest_hour.clone(),
         top_tool: top_tool(entries),
-        top_project: top_project(&report.project_breakdown),
-        biggest_session: biggest_session_by_cost.clone(),
+        top_project: output_available
+            .then(|| top_project(&report.project_breakdown))
+            .flatten(),
+        biggest_session: biggest_session_by_cost
+            .clone()
+            .or_else(|| biggest_session_by_tokens.clone()),
         biggest_session_by_cost,
         biggest_session_by_tokens,
         biggest_subagent: report.session_breakdown.costly_subagents.first().cloned(),
         prompt_ratio: prompt_ratio(&report.session_breakdown),
         next_move: report.recommendations.first().cloned(),
-        archetype: archetype(&report.model_routing, average_messages_per_active_day),
-        cache_mood: cache_mood(
-            &report.cache_health.grade.letter,
-            report.cache_health.efficiency_ratio,
-        ),
-        momentum: momentum(longest_streak, average_messages_per_active_day),
+        archetype: entertainment_archetype(report),
+        cache_mood: entertainment_cache_mood(report),
+        momentum: entertainment_momentum(report),
     }
+}
+
+fn entertainment_archetype(report: &Report) -> StoryCard {
+    report
+        .insights
+        .cards
+        .iter()
+        .find(|card| card.id == "entertainment.archetype.v1")
+        .map(|card| StoryCard {
+            title: card.title.clone(),
+            note: card.finding.clone(),
+        })
+        .unwrap_or_else(|| StoryCard {
+            title: "Entertainment · Not enough observed activity".to_string(),
+            note: "No playful persona is assigned below the declared sample gate.".to_string(),
+        })
+}
+
+fn entertainment_cache_mood(report: &Report) -> CacheMood {
+    report
+        .insights
+        .cards
+        .iter()
+        .find(|card| card.id == "entertainment.cache-mood.v1")
+        .map(|card| CacheMood {
+            title: card.title.clone(),
+            note: card.finding.clone(),
+        })
+        .unwrap_or_else(|| CacheMood {
+            title: "Entertainment · Cache label unavailable".to_string(),
+            note: "The cache-share or entertainment sample gate is unavailable.".to_string(),
+        })
+}
+
+fn entertainment_momentum(report: &Report) -> StoryCard {
+    report
+        .insights
+        .cards
+        .iter()
+        .find(|card| card.id == "entertainment.momentum.v1")
+        .map(|card| StoryCard {
+            title: card.title.clone(),
+            note: card.finding.clone(),
+        })
+        .unwrap_or_else(|| StoryCard {
+            title: "Entertainment · Momentum label unavailable".to_string(),
+            note: "The trend or entertainment sample gate is unavailable.".to_string(),
+        })
 }
 
 fn build_hero_stats(
@@ -144,16 +212,18 @@ fn build_hero_stats(
     total_messages: usize,
     average_messages_per_active_day: u64,
     prompt_ratio: &PromptRatio,
-    cache_mood: &CacheMood,
 ) -> Vec<HeroStat> {
+    let local_cost = crate::canonical_local_cost(report);
+    let cache_read = &report.canonical_metrics.cache.read_share;
     vec![
         HeroStat {
-            label: "Equivalent spend".to_string(),
-            value: format_currency(report.cost_analysis.total_cost),
+            label: "API-equivalent estimate".to_string(),
+            value: local_cost.map_or_else(|| "Unavailable".to_string(), format_currency),
             note: format!(
-                "{} active day{}",
+                "{} active day{} · {}",
                 active_day_count,
-                if active_day_count == 1 { "" } else { "s" }
+                if active_day_count == 1 { "" } else { "s" },
+                report.canonical_metrics.cost.local_api_equivalent.method_id
             ),
         },
         HeroStat {
@@ -169,14 +239,23 @@ fn build_hero_stats(
             },
         },
         HeroStat {
-            label: "Cache ratio".to_string(),
-            value: format_ratio(report.cache_health.efficiency_ratio),
-            note: format!("Grade {}", report.cache_health.grade.letter),
+            label: "Cache-read share".to_string(),
+            value: crate::canonical_ratio_display(cache_read),
+            note: cache_read.method_id.clone(),
         },
         HeroStat {
-            label: "Model mix".to_string(),
+            label: "Model request mix".to_string(),
             value: model_mix_label(&report.model_routing),
-            note: cache_mood.title.clone(),
+            note: format!(
+                "{} · {} request{}",
+                report.model_routing.method_id,
+                crate::with_grouping(report.model_routing.observations as u64),
+                if report.model_routing.observations == 1 {
+                    ""
+                } else {
+                    "s"
+                }
+            ),
         },
         HeroStat {
             label: "Human prompts".to_string(),
@@ -247,17 +326,26 @@ fn build_highlights(report: &Report, metrics: &StoryMetrics) -> Vec<Highlight> {
                 title: format_tokens(session.total_tokens),
                 note: session_note(session),
             }
-        } else if let Some(peak_day) = &report.cost_analysis.peak_day {
+        } else if let Some(peak_day) = report
+            .canonical_metrics
+            .active_time
+            .days
+            .iter()
+            .max_by_key(|day| day.active_seconds)
+        {
             Highlight {
-                eyebrow: "Peak day".to_string(),
-                title: format_currency(peak_day.cost),
-                note: format!("{} was your loudest day.", peak_day.date),
+                eyebrow: "Peak active day".to_string(),
+                title: format!("{} active seconds", peak_day.active_seconds),
+                note: format!(
+                    "{} has the largest unioned active-time estimate.",
+                    peak_day.date
+                ),
             }
         } else {
             Highlight {
-                eyebrow: "Peak day".to_string(),
-                title: "$0.00".to_string(),
-                note: "Need more history for a peak-day read.".to_string(),
+                eyebrow: "Peak active day".to_string(),
+                title: "Unavailable".to_string(),
+                note: "No active-time interval was observed in the selected period.".to_string(),
             }
         },
         if let Some(subagent) = metrics.biggest_subagent.as_ref() {
@@ -298,94 +386,19 @@ fn build_highlights(report: &Report, metrics: &StoryMetrics) -> Vec<Highlight> {
                 .as_ref()
                 .map(|rec| rec.action.clone())
                 .unwrap_or_else(|| {
-                    "Your setup looks stable. Keep the sessions clean and the cache warm."
+                    "No evidence-backed experiment cleared the current coverage threshold."
                         .to_string()
                 }),
         },
     ]
 }
 
-fn archetype(
-    model_routing: &crate::ModelRouting,
-    average_messages_per_active_day: u64,
-) -> StoryCard {
-    if model_routing.opus_pct >= 75 {
-        StoryCard {
-            title: "Precision Maximalist".to_string(),
-            note: format!(
-                "{}% of spend went through Opus. You prefer fewer, heavier swings over casual routing.",
-                model_routing.opus_pct
-            ),
-        }
-    } else if model_routing.sonnet_pct + model_routing.haiku_pct >= 45 {
-        StoryCard {
-            title: "Delegation Director".to_string(),
-            note: format!(
-                "{}% of spend lands on lighter models. You route work instead of brute-forcing it.",
-                model_routing.sonnet_pct + model_routing.haiku_pct
-            ),
-        }
-    } else if average_messages_per_active_day >= 120 {
-        StoryCard {
-            title: "Flow-State Builder".to_string(),
-            note: "You keep a steady message cadence and favor momentum over ceremony.".to_string(),
-        }
-    } else {
-        StoryCard {
-            title: "Balanced Operator".to_string(),
-            note: "You mix exploration and execution without leaning too hard on any one pattern."
-                .to_string(),
-        }
-    }
-}
-
-fn cache_mood(letter: &str, ratio: u64) -> CacheMood {
-    match letter {
-        "A" | "B" => CacheMood {
-            title: "Cache under control".to_string(),
-            note: format!(
-                "A {} cache ratio means the machine is mostly working with you.",
-                format_ratio(ratio)
-            ),
-        },
-        "C" => CacheMood {
-            title: "Cache needs tuning".to_string(),
-            note: "The setup is serviceable, but there is real slack left in session hygiene and routing."
-                .to_string(),
-        },
-        _ => CacheMood {
-            title: "Cache chaos energy".to_string(),
-            note: "This run is leaking efficiency. Compact more aggressively and reset stale sessions faster."
-                .to_string(),
-        },
-    }
-}
-
-fn momentum(longest_streak: u64, average_messages_per_active_day: u64) -> StoryCard {
-    if longest_streak >= 5 {
-        StoryCard {
-            title: format!("{longest_streak}-day streak"),
-            note: "You keep Claude Code warm across consecutive days, which is exactly what a wrapped report wants to see."
-                .to_string(),
-        }
-    } else if average_messages_per_active_day >= 120 {
-        StoryCard {
-            title: "Burst-mode operator".to_string(),
-            note: "You compress a lot of work into active days and keep the intensity high."
-                .to_string(),
-        }
-    } else {
-        StoryCard {
-            title: "Measured tempo".to_string(),
-            note: "You are selective about when you bring Claude Code in, which keeps the signal cleaner."
-                .to_string(),
-        }
-    }
-}
-
 fn top_project(project_breakdown: &[crate::ProjectSummary]) -> Option<TopProject> {
     let pool = crate::ranked_projects(project_breakdown);
-    let total_output = pool.iter().map(|p| p.output_tokens).sum::<u64>();
+    let total_output = pool
+        .iter()
+        .map(|project| project.output_tokens)
+        .fold(0u64, u64::saturating_add);
     let top = pool.first()?;
     let share_pct = if total_output > 0 {
         ((top.output_tokens as f64 / total_output as f64) * 100.0).round() as u64
@@ -417,12 +430,13 @@ fn top_tool(entries: &[AssistantEntry]) -> Option<TopTool> {
     let mut counts: BTreeMap<String, usize> = BTreeMap::new();
     for entry in entries {
         for name in &entry.tool_names {
-            *counts.entry(name.clone()).or_insert(0) += 1;
+            let count = counts.entry(name.clone()).or_insert(0);
+            *count = count.saturating_add(1);
         }
     }
     counts
         .into_iter()
-        .max_by(|left, right| left.1.cmp(&right.1))
+        .max_by(|left, right| left.1.cmp(&right.1).then_with(|| right.0.cmp(&left.0)))
         .map(|(name, count)| TopTool { name, count })
 }
 
@@ -432,7 +446,8 @@ fn favorite_weekday(active_days: &[&crate::DailyCost]) -> Option<NamedCount> {
         let Some(weekday) = weekday_from_date(&day.date) else {
             continue;
         };
-        *counts.entry(weekday).or_insert(0usize) += day.message_count.max(1);
+        let count = counts.entry(weekday).or_insert(0usize);
+        *count = count.saturating_add(day.message_count.max(1));
     }
     counts
         .into_iter()
@@ -457,7 +472,7 @@ fn longest_active_streak(dates: Vec<String>) -> u64 {
         let next = chrono::NaiveDate::parse_from_str(&pair[1], "%Y-%m-%d").ok();
         if let (Some(previous), Some(next)) = (previous, next) {
             if (next - previous).num_days() == 1 {
-                current += 1;
+                current = current.saturating_add(1);
                 best = best.max(current);
             } else {
                 current = 1;
@@ -474,8 +489,8 @@ fn session_note(session: &crate::SessionSummary) -> String {
         parts.push(session.project_name.clone());
     }
     if let Some(timestamp_start) = &session.timestamp_start {
-        if timestamp_start.len() >= 10 {
-            parts.push(timestamp_start[..10].to_string());
+        if let Some(date) = crate::timestamp_date_key(timestamp_start) {
+            parts.push(date);
         }
     }
     if let Some(first_prompt) = &session.first_prompt {
@@ -486,18 +501,21 @@ fn session_note(session: &crate::SessionSummary) -> String {
 
 fn model_mix_label(model_routing: &crate::ModelRouting) -> String {
     if !model_routing.available {
-        return "Model mix warming up".to_string();
+        return "Request mix unavailable".to_string();
     }
-    if model_routing.opus_pct >= 75 {
-        format!("{}% Opus", model_routing.opus_pct)
-    } else if model_routing.sonnet_pct >= model_routing.opus_pct {
-        format!("{}% Sonnet", model_routing.sonnet_pct)
-    } else {
-        format!(
-            "{}% Opus / {}% Sonnet",
-            model_routing.opus_pct, model_routing.sonnet_pct
-        )
-    }
+    [
+        ("Opus", model_routing.opus_pct),
+        ("Sonnet", model_routing.sonnet_pct),
+        ("Haiku", model_routing.haiku_pct),
+        ("other mapped", model_routing.other_pct),
+        ("unknown", model_routing.unknown_pct),
+    ]
+    .into_iter()
+    .max_by(|left, right| left.1.cmp(&right.1).then_with(|| right.0.cmp(left.0)))
+    .map_or_else(
+        || "Request mix unavailable".to_string(),
+        |(label, share)| format!("{share}% {label}"),
+    )
 }
 
 fn prompt_ratio(session_breakdown: &crate::SessionBreakdown) -> PromptRatio {
@@ -505,13 +523,13 @@ fn prompt_ratio(session_breakdown: &crate::SessionBreakdown) -> PromptRatio {
         .sessions
         .iter()
         .map(|session| session.prompt_count)
-        .sum::<usize>();
+        .fold(0usize, usize::saturating_add);
     let tool = session_breakdown
         .sessions
         .iter()
         .map(|session| session.tool_message_count)
-        .sum::<usize>();
-    let total = human + tool;
+        .fold(0usize, usize::saturating_add);
+    let total = human.saturating_add(tool);
     let human_pct = if total > 0 {
         ((human as f64 / total as f64) * 100.0).round() as u64
     } else {
@@ -522,5 +540,30 @@ fn prompt_ratio(session_breakdown: &crate::SessionBreakdown) -> PromptRatio {
         tool,
         total,
         human_pct,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::top_tool;
+    use crate::AssistantEntry;
+
+    #[test]
+    fn story_top_tool_uses_the_same_lexical_tie_policy_as_session_intelligence() {
+        let entries = [
+            AssistantEntry {
+                tool_names: vec!["Zulu".to_string()],
+                ..AssistantEntry::default()
+            },
+            AssistantEntry {
+                tool_names: vec!["Alpha".to_string()],
+                ..AssistantEntry::default()
+            },
+        ];
+
+        assert_eq!(
+            top_tool(&entries).map(|tool| tool.name),
+            Some("Alpha".to_string())
+        );
     }
 }

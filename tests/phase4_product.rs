@@ -796,17 +796,29 @@ fn f050_default_json_and_private_content_outputs_remain_isolated() {
 
     let default_dir = workspace.output_dir("default");
     let default = run_ccwrapped_with_data(&default_dir, &source, &[]);
-    assert!(default.status.success());
+    assert!(
+        default.status.success(),
+        "default output failed: {}",
+        String::from_utf8_lossy(&default.stderr)
+    );
     assert!(visible_output_entries(&default_dir).is_empty());
 
     let json_dir = workspace.output_dir("json");
     let json = run_ccwrapped_with_data(&json_dir, &source, &["--json"]);
-    assert!(json.status.success());
+    assert!(
+        json.status.success(),
+        "JSON output failed: {}",
+        String::from_utf8_lossy(&json.stderr)
+    );
     assert!(visible_output_entries(&json_dir).is_empty());
 
     let all_dir = workspace.output_dir("all");
     let all = run_ccwrapped_with_data(&all_dir, &source, &["--all"]);
-    assert!(all.status.success());
+    assert!(
+        all.status.success(),
+        "all-formats output failed: {}",
+        String::from_utf8_lossy(&all.stderr)
+    );
     assert_eq!(
         visible_output_entries(&all_dir),
         vec![
@@ -819,7 +831,11 @@ fn f050_default_json_and_private_content_outputs_remain_isolated() {
 
     let archive_dir = workspace.output_dir("archive");
     let archive = run_ccwrapped_with_data(&archive_dir, &source, &["--archive"]);
-    assert!(archive.status.success());
+    assert!(
+        archive.status.success(),
+        "private archive output failed: {}",
+        String::from_utf8_lossy(&archive.stderr)
+    );
     assert_eq!(
         visible_output_entries(&archive_dir),
         vec!["wrapped-archive".to_string()]

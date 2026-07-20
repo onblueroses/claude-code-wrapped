@@ -51,17 +51,11 @@ jobs:
         with:
           key: windows
       - name: Create protected Windows test root
-        run: |
-          $workspaceDrive = [System.IO.Path]::GetPathRoot($env:GITHUB_WORKSPACE)
-          $testRoot = Join-Path $workspaceDrive "ccwrapped-tests-$env:GITHUB_RUN_ID-$env:GITHUB_RUN_ATTEMPT"
-          New-Item -ItemType Directory -Path $testRoot | Out-Null
-          $currentSid = [System.Security.Principal.WindowsIdentity]::GetCurrent().User.Value
-          & icacls.exe $testRoot /inheritance:r /grant:r ("*" + $currentSid + ":(OI)(CI)F")
-          if ($LASTEXITCODE -ne 0) {
-            throw "failed to protect the Windows test root"
-          }
-          "CCWRAPPED_WINDOWS_TEST_ROOT=$testRoot" >> $env:GITHUB_ENV
+        run: ./scripts/setup-windows-test-volume.ps1
       - run: cargo clippy --workspace --all-targets --all-features --locked -- -D warnings
       - run: cargo test --test phase4_product f050_default_json_and_private_content_outputs_remain_isolated --locked
       - run: cargo test --test phase5_scale f055_windows_timestamp_preserving_rewrite_invalidates_store --locked
       - run: cargo test --test phase5_scale f056_store_is_private_corruption_is_explicit_and_rebuild_is_source_safe --locked
+      - name: Remove protected Windows test volume
+        if: always()
+        run: ./scripts/setup-windows-test-volume.ps1 -Detach

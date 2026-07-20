@@ -117,8 +117,10 @@ fn public_api_baseline_has_signatures_and_traits() {
 }
 
 #[test]
-fn compatibility_capture_ci_uses_the_pinned_toolchain() {
-    assert!(CI.contains("dtolnay/rust-toolchain@f133eefe930d61f0d9371efd474daf0125ed3dd1"));
+fn compatibility_capture_ci_separates_the_action_pin_from_toolchain_versions() {
+    assert!(CI.contains("dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c"));
+    assert_eq!(CI.matches("toolchain: 1.85.0").count(), 1);
+    assert_eq!(CI.matches("toolchain: 1.95.0").count(), 2);
     assert!(CI.contains("cargo test --all-targets"));
     assert!(!CI.contains("dtolnay/rust-toolchain@stable"));
 }

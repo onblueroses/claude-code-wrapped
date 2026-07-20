@@ -72,7 +72,8 @@ jobs:
           key: release-windows
       - name: Create protected Windows test root
         run: |
-          $testRoot = Join-Path $env:SystemDrive "ccwrapped-tests-$env:GITHUB_RUN_ID-$env:GITHUB_RUN_ATTEMPT"
+          $workspaceDrive = [System.IO.Path]::GetPathRoot($env:GITHUB_WORKSPACE)
+          $testRoot = Join-Path $workspaceDrive "ccwrapped-tests-$env:GITHUB_RUN_ID-$env:GITHUB_RUN_ATTEMPT"
           New-Item -ItemType Directory -Path $testRoot | Out-Null
           $currentSid = [System.Security.Principal.WindowsIdentity]::GetCurrent().User.Value
           & icacls.exe $testRoot /inheritance:r /grant:r ("*" + $currentSid + ":(OI)(CI)F")

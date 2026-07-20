@@ -989,6 +989,8 @@ fn f055_windows_timestamp_preserving_rewrite_invalidates_store() {
         .expect("open Windows replacement for timestamp restore");
     file.set_times(std::fs::FileTimes::new().set_modified(original_modified))
         .expect("restore Windows last-write time");
+    // Windows finalizes file timestamps when the writing handle closes.
+    drop(file);
     assert_eq!(
         fs::metadata(&changed)
             .expect("read restored Windows metadata")
@@ -1007,8 +1009,8 @@ fn f055_windows_timestamp_preserving_rewrite_invalidates_store() {
     );
     assert!(clean.status.success());
     assert_ne!(
-        stored.stdout, first.stdout,
-        "the rewritten token did not change the stored report"
+        clean.stdout, first.stdout,
+        "the completed rewrite did not change the clean report"
     );
     assert_eq!(
         stored.stdout, clean.stdout,

@@ -13,7 +13,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
-      - uses: dtolnay/rust-toolchain@8641a17e25bf5b40c118d48fe0f81e8655731839 # 1.85.0
+      - uses: dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c # master
+        with:
+          toolchain: 1.85.0
       - uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae # v2
         with:
           key: msrv
@@ -23,8 +25,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
-      - uses: dtolnay/rust-toolchain@f133eefe930d61f0d9371efd474daf0125ed3dd1 # 1.95.0
+      - uses: dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c # master
         with:
+          toolchain: 1.95.0
           components: clippy, rustfmt
       - uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae # v2
       - name: Install screenshot narrative scanner
@@ -44,13 +47,19 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
-      - uses: dtolnay/rust-toolchain@f133eefe930d61f0d9371efd474daf0125ed3dd1 # 1.95.0
+      - uses: dtolnay/rust-toolchain@2c7215f132e9ebf062739d9130488b56d53c060c # master
         with:
+          toolchain: 1.95.0
           components: clippy
       - uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae # v2
         with:
           key: windows
+      - name: Create protected Windows test root
+        run: ./scripts/setup-windows-test-volume.ps1
       - run: cargo clippy --workspace --all-targets --all-features --locked -- -D warnings
       - run: cargo test --test phase4_product f050_default_json_and_private_content_outputs_remain_isolated --locked
       - run: cargo test --test phase5_scale f055_windows_timestamp_preserving_rewrite_invalidates_store --locked
       - run: cargo test --test phase5_scale f056_store_is_private_corruption_is_explicit_and_rebuild_is_source_safe --locked
+      - name: Remove protected Windows test volume
+        if: always()
+        run: ./scripts/setup-windows-test-volume.ps1 -Detach

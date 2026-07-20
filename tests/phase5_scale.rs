@@ -25,7 +25,14 @@ impl Scratch {
             .expect("clock follows epoch")
             .as_nanos();
         let id = NEXT_TEMP_ID.fetch_add(1, Ordering::Relaxed);
-        let path = std::env::temp_dir().join(format!(
+        #[cfg(windows)]
+        let base = std::env::var_os("CCWRAPPED_WINDOWS_TEST_ROOT")
+            .or_else(|| std::env::var_os("USERPROFILE"))
+            .map(PathBuf::from)
+            .expect("Windows store tests require a test root or USERPROFILE");
+        #[cfg(not(windows))]
+        let base = std::env::temp_dir();
+        let path = base.join(format!(
             "ccwrapped-phase5-{label}-{}-{nonce}-{id}",
             std::process::id()
         ));
@@ -969,10 +976,15 @@ fn f055_windows_timestamp_preserving_rewrite_invalidates_store() {
         .modified()
         .expect("read original Windows last-write time");
     let mut replacement = fs::read(&changed).expect("read Windows transcript");
-    let token_digit = replacement
-        .windows(b"\"input_tokens\":1".len())
-        .position(|window| window == b"\"input_tokens\":1")
-        .expect("generated input token")
+    let accepted_record = replacement
+        .windows(b"\"requestId\":\"request-00000-00072\"".len())
+        .position(|window| window == b"\"requestId\":\"request-00000-00072\"")
+        .expect("generated accepted request");
+    let token_digit = accepted_record
+        + replacement[accepted_record..]
+            .windows(b"\"input_tokens\":1".len())
+            .position(|window| window == b"\"input_tokens\":1")
+            .expect("generated input token")
         + b"\"input_tokens\":".len();
     replacement[token_digit] = b'9';
     fs::write(&changed, replacement).expect("write equal-length Windows replacement");
@@ -982,6 +994,8 @@ fn f055_windows_timestamp_preserving_rewrite_invalidates_store() {
         .expect("open Windows replacement for timestamp restore");
     file.set_times(std::fs::FileTimes::new().set_modified(original_modified))
         .expect("restore Windows last-write time");
+    // Windows finalizes file timestamps when the writing handle closes.
+    drop(file);
     assert_eq!(
         fs::metadata(&changed)
             .expect("read restored Windows metadata")
@@ -1000,8 +1014,8 @@ fn f055_windows_timestamp_preserving_rewrite_invalidates_store() {
     );
     assert!(clean.status.success());
     assert_ne!(
-        stored.stdout, first.stdout,
-        "the rewritten token did not change the stored report"
+        clean.stdout, first.stdout,
+        "the completed rewrite did not change the clean report"
     );
     assert_eq!(
         stored.stdout, clean.stdout,

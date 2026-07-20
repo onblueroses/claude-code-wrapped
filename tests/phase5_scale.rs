@@ -976,10 +976,15 @@ fn f055_windows_timestamp_preserving_rewrite_invalidates_store() {
         .modified()
         .expect("read original Windows last-write time");
     let mut replacement = fs::read(&changed).expect("read Windows transcript");
-    let token_digit = replacement
-        .windows(b"\"input_tokens\":1".len())
-        .position(|window| window == b"\"input_tokens\":1")
-        .expect("generated input token")
+    let accepted_record = replacement
+        .windows(b"\"requestId\":\"request-00000-00072\"".len())
+        .position(|window| window == b"\"requestId\":\"request-00000-00072\"")
+        .expect("generated accepted request");
+    let token_digit = accepted_record
+        + replacement[accepted_record..]
+            .windows(b"\"input_tokens\":1".len())
+            .position(|window| window == b"\"input_tokens\":1")
+            .expect("generated input token")
         + b"\"input_tokens\":".len();
     replacement[token_digit] = b'9';
     fs::write(&changed, replacement).expect("write equal-length Windows replacement");

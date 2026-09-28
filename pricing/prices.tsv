@@ -1,0 +1,26 @@
+# Anthropic first-party API list prices in microdollars per million tokens.
+# Source: pricing/anthropic-pricing-2026-09-27.md (platform.claude.com/docs/en/about-claude/pricing).
+# A row applies to the model id exactly, or to the id with a trailing -YYYYMMDD snapshot suffix.
+# speed "fast" rows are fast-mode base prices with the cache multipliers applied on top.
+# Models 4.6 and later bill the full 1M context at these rates (no long-context premium).
+# US-only inference (usage.inference_geo "us") multiplies every category by 1.1 on 4.6 and later.
+# model	speed	input	cache_write_5m	cache_write_1h	cache_read	output
+claude-fable-5-1	standard	10000000	12500000	20000000	250000	50000000
+claude-fable-5	standard	10000000	12500000	20000000	1000000	50000000
+claude-opus-5-5	standard	4000000	5000000	8000000	200000	20000000
+claude-opus-5-5	fast	8000000	10000000	16000000	400000	40000000
+claude-opus-5	standard	5000000	6250000	10000000	500000	25000000
+claude-opus-5	fast	10000000	12500000	20000000	1000000	50000000
+claude-opus-4-8	standard	5000000	6250000	10000000	500000	25000000
+claude-opus-4-8	fast	10000000	12500000	20000000	1000000	50000000
+claude-opus-4-7	standard	5000000	6250000	10000000	500000	25000000
+claude-opus-4-6	standard	5000000	6250000	10000000	500000	25000000
+claude-opus-4-5	standard	5000000	6250000	10000000	500000	25000000
+claude-opus-4-1	standard	15000000	18750000	30000000	1500000	75000000
+claude-opus-4	standard	15000000	18750000	30000000	1500000	75000000
+claude-sonnet-5	standard	2000000	2500000	4000000	200000	10000000
+claude-sonnet-4-6	standard	3000000	3750000	6000000	300000	15000000
+claude-sonnet-4-5	standard	3000000	3750000	6000000	300000	15000000
+claude-sonnet-4	standard	3000000	3750000	6000000	300000	15000000
+claude-haiku-4-5	standard	1000000	1250000	2000000	100000	5000000
+claude-haiku-3-5	standard	800000	1000000	1600000	80000	4000000

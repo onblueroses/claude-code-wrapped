@@ -1,0 +1,9 @@
+{"parentUuid": null, "isSidechain": false, "cwd": "/home/u/proj", "sessionId": "s-main", "type": "user", "message": {"role": "user", "content": "café \\ \"quoted\" 😀 emoji"}, "uuid": "p-esc-1", "timestamp": "2026-05-05T10:00:00Z"}
+{"type":"user","uuid":"p-esc-2","timestamp":"2026-05-05T10:00:01Z","message":{"content":"\u003clocal-command-stdout>x"}}
+{"type":"user","uuid":"p-esc-3","timestamp":"2026-05-05T10:00:02Z","message":{"content":"\n\t\r\f\u000b "}}
+{"type":"user","uuid":"p-esc-4","timestamp":"2026-05-05T10:00:03Z","message":{"content":"\b"}}
+{"type":"user","uuid":"p-esc-5","timestamp":"2026-05-05T10:00:04Z","message":{"content":"\ud83d lone high"}}
+{"type":"user","uuid":"p-esc-6","timestamp":"2026-05-05T10:00:05Z","message":{"content":"\/\"\\"}}
+{"type":"assistant","timestamp":"2026-05-05T10:00:06Z","cwd":"/home/u/caf\u00e9 \ud83d\ude00\ttab\nline","sessionId":"s-esc","message":{"id":"msg_esc","model":"claude-sonnet-5","usage":{"input_tokens":1}}}
+{"type":"assistant","timestamp":"2026-05-05T10:00:07Z","cwd":"/home/u/lone\udc00low","sessionId":"s-esc","message":{"id":"msg_esc2","model":"claude-sonnet-5","usage":{"input_tokens":1}}}
+{"type":"assistant","timestamp":"2026-05-05T10:00:08Z","message":{"id":"msg_\u0065sc3","model":"claude-sonnet-\u0035","usage":{"input_tokens":1},"content":[{"type":"tool_\u0075se","id":"toolu_esc","name":"W\u0065bFetch"}]}}

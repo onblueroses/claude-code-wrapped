@@ -1,11 +1,8 @@
-target/
-*.log
+bend/.local/
 .DS_Store
-Thumbs.db
 .env
-claude-code-wrapped.html
-claude-code-wrapped.md
-claude-code-wrapped-card.html
-wrapped-archive/
-wrapped-preview.png
 /.git-old
+.local/
+*.log
+__pycache__/
+Thumbs.db

@@ -3,18 +3,6 @@
 // Lists every regular *.jsonl file under a root as "size\tmtime\tpath\n" lines, sorted by
 // path. Symlinked directories are not followed; a symlink to a regular file is listed.
 
-// The constructor id carries the module path of effects.bend, which differs between Bend
-// releases; accept each spelling seen so far.
-#if defined(CID_EFFECTS_DIR_WALK)
-#define DIR_WALK_CID CID_EFFECTS_DIR_WALK
-#elif defined(CID___EFFECTS_DIR_WALK)
-#define DIR_WALK_CID CID___EFFECTS_DIR_WALK
-#elif defined(CID____EFFECTS_DIR_WALK)
-#define DIR_WALK_CID CID____EFFECTS_DIR_WALK
-#else
-#define DIR_WALK_CID CID_DIR_WALK
-#endif
-
 #include <ftw.h>
 #include <sys/stat.h>
 
@@ -105,5 +93,5 @@ Term dir_walk_run(Env e, Term* f, IoWork* w) {
 }
 
 static void __attribute__((constructor)) dir_walk_use(void) {
-  io_eff(DIR_WALK_CID, dir_walk_run, 0);
+  io_eff(CID(Dir.walk), dir_walk_run);
 }

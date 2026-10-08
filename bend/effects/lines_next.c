@@ -4,18 +4,6 @@
 // newline and never past the limit recorded at open. An empty string means no complete line
 // remains; a trailing partial line is never returned.
 
-// The constructor id carries the module path of effects.bend, which differs between Bend
-// releases; accept each spelling seen so far.
-#if defined(CID_EFFECTS_LINES_NEXT)
-#define LINES_NEXT_CID CID_EFFECTS_LINES_NEXT
-#elif defined(CID___EFFECTS_LINES_NEXT)
-#define LINES_NEXT_CID CID___EFFECTS_LINES_NEXT
-#elif defined(CID____EFFECTS_LINES_NEXT)
-#define LINES_NEXT_CID CID____EFFECTS_LINES_NEXT
-#else
-#define LINES_NEXT_CID CID_LINES_NEXT
-#endif
-
 #ifndef LINES_STATE
 #define LINES_STATE
 #include <sys/stat.h>
@@ -228,17 +216,14 @@ static void lines_next_call(IoWork* w) {
   io_sys_end(w, 0);
 }
 
-// The Txt constructors of types.bend; their id carries the module path, as above.
-#if defined(CID_TYPES_TCON)
+// The Txt constructors of types.bend. CID(Name) reaches only the effect's own namespace and
+// Base, so these use the macros the compiler emits for types.bend; a release that renames them
+// fails here instead of miscompiling.
+#if !defined(CID_TYPES_TCON) || !defined(CID_TYPES_TNIL)
+#error "no CID_TYPES_TCON/CID_TYPES_TNIL in the emitted C: find the Txt constructor ids"
+#endif
 #define LINES_TCON CID_TYPES_TCON
 #define LINES_TNIL CID_TYPES_TNIL
-#elif defined(CID____TYPES_TCON)
-#define LINES_TCON CID____TYPES_TCON
-#define LINES_TNIL CID____TYPES_TNIL
-#else
-#define LINES_TCON CID_TCON
-#define LINES_TNIL CID_TNIL
-#endif
 
 // Decodes UTF-8 (already validated) into a Txt, one code point per cell.
 static Term lines_txt(Env e, const char* p, u64 n) {
@@ -287,5 +272,5 @@ Term lines_next_run(Env e, Term* f, IoWork* w) {
 }
 
 static void __attribute__((constructor)) lines_next_use(void) {
-  io_eff(LINES_NEXT_CID, lines_next_run, 0);
+  io_eff(CID(Lines.next), lines_next_run);
 }

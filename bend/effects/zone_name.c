@@ -5,16 +5,6 @@
 
 #include <limits.h>
 
-#if defined(CID_EFFECTS_ZONE_NAME)
-#define ZONE_NAME_CID CID_EFFECTS_ZONE_NAME
-#elif defined(CID___EFFECTS_ZONE_NAME)
-#define ZONE_NAME_CID CID___EFFECTS_ZONE_NAME
-#elif defined(CID____EFFECTS_ZONE_NAME)
-#define ZONE_NAME_CID CID____EFFECTS_ZONE_NAME
-#else
-#define ZONE_NAME_CID CID_ZONE_NAME
-#endif
-
 Term zone_name_run(Env e, Term* f, IoWork* w) {
   (void)f;
   (void)w;
@@ -33,5 +23,5 @@ Term zone_name_run(Env e, Term* f, IoWork* w) {
 }
 
 static void __attribute__((constructor)) zone_name_use(void) {
-  io_eff(ZONE_NAME_CID, zone_name_run, 0);
+  io_eff(CID(Zone.name), zone_name_run);
 }

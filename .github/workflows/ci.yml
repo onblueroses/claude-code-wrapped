@@ -12,10 +12,22 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+      # Pinned: the effects in bend/effects/ register with the three-argument io_eff of 2.0.32;
+      # 2.0.35 dropped the third argument, so an unpinned install breaks the build.
       - name: Install Bend
+        env:
+          BEND_VER: 2.0.32
+          BEND_SHA256: 5c365ddb12954d0933cef751802e0f7d9875f842edcb80f9661f89cd1a9ff7b6
         run: |
-          curl -fsSL https://bend-lang.com/install.sh | sh
-          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          name="bend-$BEND_VER-linux-x64.tar.gz"
+          tmp=$(mktemp -d)
+          curl --proto '=https' --tlsv1.2 -fsSL -o "$tmp/$name" \
+            "https://github.com/bendlang/bend/releases/download/v$BEND_VER/$name"
+          echo "$BEND_SHA256  $tmp/$name" | sha256sum -c -
+          tar -xzf "$tmp/$name" -C "$tmp"
+          mkdir -p "$HOME/.bend/bin"
+          mv "$tmp/bend/bend2" "$tmp/bend/guide" "$HOME/.bend/"
+          mv "$tmp/bend/bin/bend" "$HOME/.bend/bin/bend"
           echo "$HOME/.bend/bin" >> "$GITHUB_PATH"
       - name: Install Lean (bend --verdict rechecks the proofs with a Lean kernel)
         run: |

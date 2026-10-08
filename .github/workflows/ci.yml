@@ -12,12 +12,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      # Pinned: the effects in bend/effects/ register with the three-argument io_eff of 2.0.32;
-      # 2.0.35 dropped the third argument, so an unpinned install breaks the build.
+      # Pinned: the C effects in bend/effects/ use runtime internals that carry no ABI promise
+      # (EFFECTS.md), so a new release can break the build. Bump deliberately and rerun the tests.
       - name: Install Bend
         env:
-          BEND_VER: 2.0.32
-          BEND_SHA256: 5c365ddb12954d0933cef751802e0f7d9875f842edcb80f9661f89cd1a9ff7b6
+          BEND_VER: 2.0.36
+          BEND_SHA256: 02089dc0eed0fd5fd6d73c74cc9cffcb2c6638dd3b02ae83f7b8cc57fbe381ba
         run: |
           name="bend-$BEND_VER-linux-x64.tar.gz"
           tmp=$(mktemp -d)

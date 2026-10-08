@@ -4,16 +4,6 @@
 // not a zone in the system's zone database. glibc reads an unknown TZ as UTC without saying
 // so; checking for the zone file first turns a misspelled --tz into an error.
 
-#if defined(CID_EFFECTS_ZONE_YEAR)
-#define ZONE_YEAR_CID CID_EFFECTS_ZONE_YEAR
-#elif defined(CID___EFFECTS_ZONE_YEAR)
-#define ZONE_YEAR_CID CID___EFFECTS_ZONE_YEAR
-#elif defined(CID____EFFECTS_ZONE_YEAR)
-#define ZONE_YEAR_CID CID____EFFECTS_ZONE_YEAR
-#else
-#define ZONE_YEAR_CID CID_ZONE_YEAR
-#endif
-
 #include <limits.h>
 #include <sys/stat.h>
 #include <time.h>
@@ -47,5 +37,5 @@ Term zone_year_run(Env e, Term* f, IoWork* w) {
 }
 
 static void __attribute__((constructor)) zone_year_use(void) {
-  io_eff(ZONE_YEAR_CID, zone_year_run, 0);
+  io_eff(CID(Zone.year), zone_year_run);
 }

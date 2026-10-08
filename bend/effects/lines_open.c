@@ -3,18 +3,6 @@
 // A transcript source opened for whole-line reads. The byte length observed at open is the
 // read limit, so records appended while a session is still writing are left for the next run.
 
-// The constructor id carries the module path of effects.bend, which differs between Bend
-// releases; accept each spelling seen so far.
-#if defined(CID_EFFECTS_LINES_OPEN)
-#define LINES_OPEN_CID CID_EFFECTS_LINES_OPEN
-#elif defined(CID___EFFECTS_LINES_OPEN)
-#define LINES_OPEN_CID CID___EFFECTS_LINES_OPEN
-#elif defined(CID____EFFECTS_LINES_OPEN)
-#define LINES_OPEN_CID CID____EFFECTS_LINES_OPEN
-#else
-#define LINES_OPEN_CID CID_LINES_OPEN
-#endif
-
 #ifndef LINES_STATE
 #define LINES_STATE
 #include <sys/stat.h>
@@ -59,5 +47,5 @@ Term lines_open_run(Env e, Term* f, IoWork* w) {
 }
 
 static void __attribute__((constructor)) lines_open_use(void) {
-  io_eff(LINES_OPEN_CID, lines_open_run, 0);
+  io_eff(CID(Lines.open), lines_open_run);
 }

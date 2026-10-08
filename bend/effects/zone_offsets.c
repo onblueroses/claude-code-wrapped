@@ -3,18 +3,6 @@
 // UTC offsets of an IANA zone ("" keeps the process zone) around a calendar year, as
 // "epoch\toffset_seconds\n" lines: the offset at the first epoch, then every transition.
 
-// The constructor id carries the module path of effects.bend, which differs between Bend
-// releases; accept each spelling seen so far.
-#if defined(CID_EFFECTS_ZONE_OFFSETS)
-#define ZONE_OFFSETS_CID CID_EFFECTS_ZONE_OFFSETS
-#elif defined(CID___EFFECTS_ZONE_OFFSETS)
-#define ZONE_OFFSETS_CID CID___EFFECTS_ZONE_OFFSETS
-#elif defined(CID____EFFECTS_ZONE_OFFSETS)
-#define ZONE_OFFSETS_CID CID____EFFECTS_ZONE_OFFSETS
-#else
-#define ZONE_OFFSETS_CID CID_ZONE_OFFSETS
-#endif
-
 #include <time.h>
 
 static __thread char* zone_buf;
@@ -84,5 +72,5 @@ Term zone_offsets_run(Env e, Term* f, IoWork* w) {
 }
 
 static void __attribute__((constructor)) zone_offsets_use(void) {
-  io_eff(ZONE_OFFSETS_CID, zone_offsets_run, 0);
+  io_eff(CID(Zone.offsets), zone_offsets_run);
 }
